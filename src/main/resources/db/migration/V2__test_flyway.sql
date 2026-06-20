@@ -1,0 +1,2 @@
+ALTER TABLE users
+ADD COLUMN test_flyway VARCHAR(50);

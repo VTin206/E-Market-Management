@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import E_Market_Management.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> finByUsername(String userName);
+    Optional<User> findByUserName(String userName);
 
-    Optional<User> finByEmail(String email);
+    Optional<User> findByEmail(String email);
 
-    boolean existsByUsername(String userName);
+    boolean existsByUserName(String userName);
 
     boolean existsByEmail(String email);
 }

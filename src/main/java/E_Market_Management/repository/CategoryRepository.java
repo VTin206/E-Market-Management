@@ -1,6 +1,6 @@
 package E_Market_Management.repository;
 
-import java.util.Locale.Category;
+import E_Market_Management.entity.Category;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

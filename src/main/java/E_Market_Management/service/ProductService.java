@@ -3,8 +3,6 @@ package E_Market_Management.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import E_Market_Management.dto.brand.BrandResponse;
-import E_Market_Management.dto.category.CategoryResponse;
 import E_Market_Management.dto.product.ProductCreateRequest;
 import E_Market_Management.dto.product.ProductResponse;
 import E_Market_Management.dto.product.ProductUpdateRequest;
@@ -12,6 +10,7 @@ import E_Market_Management.entity.Brand;
 import E_Market_Management.entity.Category;
 import E_Market_Management.entity.Product;
 import E_Market_Management.exception.ResourceNotFoundException;
+import E_Market_Management.mapper.ProductMapper;
 import E_Market_Management.repository.BrandRepository;
 import E_Market_Management.repository.CategoryRepository;
 import E_Market_Management.repository.ProductRepository;
@@ -21,11 +20,14 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
+    private final ProductMapper productMapper;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, BrandRepository brandRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
+            BrandRepository brandRepository, ProductMapper productMapper) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.brandRepository = brandRepository;
+        this.productMapper = productMapper;
     }
 
     @Transactional
@@ -44,7 +46,7 @@ public class ProductService {
                 .brand(brand)
                 .build();
         
-        return toResponse(productRepository.save(product));
+        return productMapper.toResponse(productRepository.save(product));
     }
 
     @Transactional
@@ -91,35 +93,6 @@ public class ProductService {
             product.setBrand(brand);
         }
 
-        return toResponse(productRepository.save(product));
-    }
-
-
-    //mapper
-    private ProductResponse toResponse(Product product) {
-        Category category = product.getCategory();
-        Brand brand = product.getBrand();
-
-        CategoryResponse categoryResponse = CategoryResponse.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .description(category.getDescription())
-                .build();
-
-        BrandResponse brandResponse = BrandResponse.builder()
-                .name(brand.getName())
-                .country(brand.getCountry())
-                .build();
-
-        return new ProductResponse(
-            product.getId(),
-            product.getName(),
-            product.getDescription(),
-            product.getPrice(),
-            product.getStock(),
-            product.getImageUrl(),
-            categoryResponse,
-            brandResponse
-        );
+        return productMapper.toResponse(productRepository.save(product));
     }
 }

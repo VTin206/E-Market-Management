@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import E_Market_Management.dto.cart.AddToCartRequest;
 import E_Market_Management.dto.cart.CartItemResponse;
 import E_Market_Management.dto.cart.CartResponse;
+import E_Market_Management.dto.cart.UpdateCartItemRequest;
 import E_Market_Management.entity.Cart;
 import E_Market_Management.entity.CartItem;
 import E_Market_Management.entity.Product;
@@ -88,17 +89,6 @@ public class CartService {
     }
 
     @Transactional
-    public CartResponse removeCartItem(Long userId, Long itemId) {
-        CartItem cartItem = cartItemRepository
-            .findByIdAndCart_User_Id(itemId, userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay san pham trong gio hang"));
-
-        cartItemRepository.delete(cartItem);
-
-        return getCart(userId);
-    }
-
-    @Transactional
     public CartResponse getCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
         List<CartItemResponse> items = cartItemRepository
@@ -112,6 +102,30 @@ public class CartService {
             .userId(userId)
             .items(items)
             .build();
+    }
+
+    @Transactional
+    public CartResponse removeItem(Long userId, Long itemId) {
+        CartItem cartItem = cartItemRepository
+            .findByIdAndCart_User_Id(itemId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm trong giỏ hàng"));
+
+        cartItemRepository.delete(cartItem);
+        return getCart(userId);
+    }
+
+    @Transactional
+    public CartResponse updateCartItem(Long userId, Long itemId, UpdateCartItemRequest request) {
+        CartItem cartItem = cartItemRepository
+            .findByIdAndCart_User_Id(itemId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm trong giỏ hàng"));
+
+        validateStock(cartItem.getProduct(), request.getQuantity());
+
+        cartItem.setQuantity(request.getQuantity());
+        cartItemRepository.save(cartItem);
+
+        return getCart(userId);
     }
 
     private CartItemResponse toCartItemResponse(CartItem cartItem) {

@@ -1,5 +1,7 @@
 package E_Market_Management.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,5 +96,20 @@ public class ProductService {
         }
 
         return productMapper.toResponse(productRepository.save(product));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll()
+            .stream()
+            .map(productMapper::toResponse)
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm có id "+ id));
+        return productMapper.toResponse(product);
     }
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 public class RegisterRequest {
 
     @NotBlank(message = "Username không được để trống")
-    private String username;
+    private String userName;
 
     @NotBlank(message = "Password không được để trống")
     @Size(min = 6, message = "Password phải có ít nhất 6 ký tự")

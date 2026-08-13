@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Market Phone Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-main shell">
+            <a class="brand" href="#home" aria-label="E-Market Phone">
+                <span class="brand-text">E-Market</span>
+                <span class="brand-device" aria-hidden="true">EM</span>
+            </a>
+
+            <button class="catalog-button" id="catalogToggle" type="button">
+                <span class="hamburger"></span>
+                Danh mục
+            </button>
+
+            <form class="search-box" id="searchForm">
+                <input id="searchInput" type="search" placeholder="Bạn cần tìm gì..." autocomplete="off">
+                <button type="submit" aria-label="Tìm kiếm">⌕</button>
+            </form>
+
+            <div class="header-actions">
+                <a class="header-link" href="tel:19006750">
+                    <span class="header-icon">☎</span>
+                    <span>Hotline<br>1900 6750</span>
+                </a>
+                <button class="header-link" id="storeButton" type="button">
+                    <span class="header-icon">⌖</span>
+                    <span>Hệ thống<br>cửa hàng</span>
+                </button>
+                <button class="header-link" id="orderLookupButton" type="button">
+                    <span class="header-icon">▣</span>
+                    <span>Tra cứu<br>đơn hàng</span>
+                </button>
+                <button class="header-link cart-link" id="cartButton" type="button">
+                    <span class="header-icon">▱</span>
+                    <span>Giỏ hàng<br>Sản phẩm</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+                <button class="account-button" id="accountButton" type="button">
+                    <span class="header-icon">◎</span>
+                    <span id="accountLabel">Thông tin</span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="main-nav">
+            <div class="shell nav-scroll">
+                <a class="active" href="#home">Trang chủ</a>
+                <a href="#about">Giới thiệu</a>
+                <a href="#products">Sản phẩm</a>
+                <a href="#news">Tin tức</a>
+                <a href="#reviews">Review</a>
+                <a href="#faq">Câu hỏi thường gặp</a>
+                <a href="#warranty">Tra cứu bảo hành</a>
+                <a href="#preorder">Đặt trước</a>
+                <a href="#contact">Liên hệ</a>
+            </div>
+        </nav>
+    </header>
+
+    <aside class="catalog-panel" id="catalogPanel" aria-hidden="true">
+        <div class="catalog-head">
+            <strong>Danh mục sản phẩm</strong>
+            <button id="closeCatalog" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div id="catalogList"></div>
+    </aside>
+
+    <main>
+        <section class="hero shell listing-view" id="home">
+            <div class="hero-copy">
+                <span class="eyebrow">Apple Store Demo</span>
+                <h1>Điện thoại, tablet và phụ kiện chính hãng</h1>
+                <p>Giao diện bán hàng lấy cảm hứng từ Dola Phone, ưu tiên trải nghiệm mua sắm nhanh, thẻ sản phẩm rõ ràng và kết nối sẵn backend Spring Boot.</p>
+                <div class="hero-actions">
+                    <a class="primary-button" href="#products">Xem sản phẩm</a>
+                    <button class="ghost-button" id="heroLoginButton" type="button">Đăng nhập demo</button>
+                </div>
+            </div>
+            <div class="hero-device" aria-hidden="true">
+                <div class="phone-back"></div>
+                <div class="phone-front">
+                    <span></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured-categories shell panel listing-view">
+            <div class="section-title">
+                <span></span>
+                <h2>Danh mục nổi bật</h2>
+            </div>
+            <div class="category-grid" id="categoryGrid"></div>
+        </section>
+
+        <section class="products-section shell panel listing-view" id="products">
+            <div class="tabs" id="productTabs">
+                <button class="tab active" data-filter="new" type="button"><span class="badge-star">New</span>Sản phẩm mới</button>
+                <button class="tab" data-filter="featured" type="button"><span class="badge-hot">Hot</span>Sản phẩm nổi bật</button>
+                <button class="tab" data-filter="best" type="button"><span class="badge-best">Best</span>Sản phẩm bán chạy</button>
+            </div>
+            <div class="status-line" id="dataStatus"></div>
+            <div class="product-grid" id="productGrid"></div>
+        </section>
+
+        <section class="detail-section shell panel hidden" id="productDetail"></section>
+
+        <section class="service-strip shell listing-view">
+            <article>
+                <strong>Giao hàng nhanh</strong>
+                <span>Nội thành nhận hàng trong ngày</span>
+            </article>
+            <article>
+                <strong>Tư vấn chuyên nghiệp</strong>
+                <span>Đội ngũ hỗ trợ chọn máy phù hợp</span>
+            </article>
+            <article>
+                <strong>100% chính hãng</strong>
+                <span>Bảo hành rõ ràng, nguồn gốc minh bạch</span>
+            </article>
+            <article>
+                <strong>Thanh toán linh hoạt</strong>
+                <span>Hỗ trợ nhiều phương thức thanh toán</span>
+            </article>
+        </section>
+    </main>
+
+    <div class="floating-left">
+        <button type="button" id="notifyButton" aria-label="Thông báo">●</button>
+    </div>
+
+    <div class="floating-right">
+        <button type="button" id="languageButton" aria-label="Ngôn ngữ">◎</button>
+        <button type="button" id="scrollTopButton" aria-label="Lên đầu trang">⌃</button>
+        <button type="button" id="contactButton" aria-label="Liên hệ">✉</button>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+
+    <div class="drawer-backdrop hidden" id="cartBackdrop"></div>
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+        <div class="drawer-head">
+            <div>
+                <span>Giỏ hàng</span>
+                <strong id="cartTitle">0 sản phẩm</strong>
+            </div>
+            <button id="closeCart" type="button" aria-label="Đóng giỏ hàng">×</button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-summary">
+            <div>
+                <span>Tạm tính</span>
+                <strong id="cartTotal">0₫</strong>
+            </div>
+            <button class="primary-button full" type="button">Thanh toán</button>
+        </div>
+    </aside>
+
+    <div class="modal-backdrop hidden" id="authBackdrop"></div>
+    <section class="auth-modal hidden" id="authModal" aria-hidden="true">
+        <div class="modal-head">
+            <div>
+                <span>Tài khoản</span>
+                <strong>Đăng nhập / Đăng ký</strong>
+            </div>
+            <button id="closeAuth" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div class="auth-tabs">
+            <button class="active" data-auth-tab="login" type="button">Đăng nhập</button>
+            <button data-auth-tab="register" type="button">Đăng ký</button>
+        </div>
+        <form class="auth-form" id="loginForm">
+            <label>
+                Tên đăng nhập
+                <input name="userName" type="text" required autocomplete="username">
+            </label>
+            <label>
+                Mật khẩu
+                <input name="password" type="password" required autocomplete="current-password">
+            </label>
+            <button class="primary-button full" type="submit">Đăng nhập</button>
+        </form>
+        <form class="auth-form hidden" id="registerForm">
+            <label>
+                Tên đăng nhập
+                <input name="userName" type="text" required autocomplete="username">
+            </label>
+            <label>
+                Họ tên
+                <input name="fullName" type="text" required autocomplete="name">
+            </label>
+            <label>
+                Email
+                <input name="email" type="email" required autocomplete="email">
+            </label>
+            <label>
+                Số điện thoại
+                <input name="phone" type="tel" autocomplete="tel">
+            </label>
+            <label>
+                Mật khẩu
+                <input name="password" type="password" required minlength="6" autocomplete="new-password">
+            </label>
+            <button class="primary-button full" type="submit">Tạo tài khoản</button>
+        </form>
+    </section>
+
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

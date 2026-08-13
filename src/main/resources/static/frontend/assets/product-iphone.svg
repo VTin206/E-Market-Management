@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="iPhone 15 Pro Max">
+  <defs>
+    <linearGradient id="titanium" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eee9dd"/>
+      <stop offset="0.42" stop-color="#b6b1a4"/>
+      <stop offset="1" stop-color="#6f6b61"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e4dccd"/>
+      <stop offset="0.36" stop-color="#37342f"/>
+      <stop offset="0.58" stop-color="#0d0d0d"/>
+      <stop offset="0.76" stop-color="#7b7568"/>
+      <stop offset="1" stop-color="#f4efe5"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="54%" cy="48%" r="58%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="0.38" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000000" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+  <rect width="600" height="600" fill="#fff"/>
+  <g filter="url(#shadow)">
+    <rect x="86" y="48" width="246" height="508" rx="48" fill="url(#titanium)" stroke="#2b2b2b" stroke-width="5"/>
+    <rect x="98" y="62" width="222" height="480" rx="39" fill="url(#titanium)" opacity="0.84"/>
+    <rect x="108" y="68" width="126" height="126" rx="34" fill="#c9c3b6" stroke="#8a857a" stroke-width="3"/>
+    <circle cx="144" cy="104" r="29" fill="#151922" stroke="#665f56" stroke-width="6"/>
+    <circle cx="199" cy="104" r="29" fill="#151922" stroke="#665f56" stroke-width="6"/>
+    <circle cx="144" cy="159" r="29" fill="#151922" stroke="#665f56" stroke-width="6"/>
+    <circle cx="199" cy="159" r="13" fill="#121212"/>
+    <circle cx="232" cy="139" r="11" fill="#1b1b1b"/>
+    <circle cx="229" cy="82" r="14" fill="#f6f1e7" opacity="0.76"/>
+    <path d="M222 331c16-20 38-17 50-2-18 8-18 35-1 44-8 18-21 34-36 34-12 0-17-8-29-8-13 0-19 8-30 8-18 0-42-38-42-70 0-28 19-45 40-45 12 0 21 8 29 8 7 0 13-5 19-9z" fill="#807b70" opacity="0.55"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="258" y="40" width="258" height="520" rx="51" fill="#0b0b0b"/>
+    <rect x="269" y="52" width="236" height="496" rx="42" fill="url(#screen)"/>
+    <rect x="340" y="63" width="96" height="29" rx="15" fill="#050505"/>
+    <path d="M283 132c58-10 111 31 163 24 29-4 46-17 59-34v126c-31 33-68 52-110 56-44 4-89-7-126 14z" fill="#f2eadf" opacity="0.25"/>
+    <path d="M269 382c50-46 110-53 158-34 34 13 58 39 78 70v101c-52 16-105 20-159 10-34-6-60-18-77-33z" fill="#f3eadc" opacity="0.38"/>
+    <rect x="269" y="52" width="236" height="496" rx="42" fill="url(#shine)"/>
+  </g>
+</svg>

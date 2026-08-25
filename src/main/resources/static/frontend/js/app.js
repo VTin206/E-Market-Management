@@ -68,7 +68,7 @@
     }
 
     function formatMoney(value) {
-        if (!value) return "Liên hệ";
+        if (value === null || value === undefined || value === "") return "Liên hệ";
         return new Intl.NumberFormat("vi-VN").format(value) + "đ";
     }
 

@@ -1,0 +1,45 @@
+﻿Issue ID,Issue Type,Summary,Description,Priority,Sprint,Component,Labels,Original Estimate,Story Points,Parent ID,Source Ref
+1001,Epic,Project Planning & Architecture,"Planning, source review, scope baseline, WBS, risk register and technical alignment.",High,Sprint 1 - Planning & Architecture,Project Management,planning architecture,,,,Week 1
+1002,Epic,Authentication & Authorization,"Authentication, JWT and User/Admin authorization for the MVP.",Highest,Sprint 2 - Backend Core,Auth,backend security auth,,,,"US-01, US-02"
+1003,Epic,Product Catalog & Management,"Product catalog, Category/Brand linkage and admin product management.",High,Sprint 4 - Admin & Product Stabilization,Product,backend product admin,,,,"US-03, US-08"
+1004,Epic,Shopping Cart,Cart operations bound to the authenticated JWT user.,Highest,Sprint 2 - Backend Core,Cart,backend cart security,,,,"US-04, US-05"
+1005,Epic,Order & Checkout,"Complete checkout: create order/items, total calculation, stock deduction, history and status management.",Highest,Sprint 2 - Backend Core,Order,backend order checkout,,,,"US-06, US-07, US-09"
+1006,Epic,Storefront & Checkout UI,"Integrate Order APIs, checkout form, cart flow, toast and loading/error states.",High,Sprint 3 - Frontend Checkout,Frontend,frontend ui checkout,,,,FE-01..06
+1007,Epic,Testing & Hardening,"Unit tests, integration tests, responsive test, UAT and P1/P2 bug fixing.",Highest,Sprint 5 - Testing & Hardening,QA,qa testing,,,,QA-01..04
+1008,Epic,Documentation & Release,"README, API documentation, demo script, sign-off and MVP release.",High,Sprint 6 - Documentation & Release,Release,docs release,,,,DOC-01..02
+1009,Task,Review existing source code,"Run the current application; review Auth, Product, Cart APIs/services and identify gaps before new development.",Highest,Sprint 1 - Planning & Architecture,Project Management,planning source-review,14400,2,1001,Week 1
+1010,Task,Finalize MVP scope and user stories,"Confirm in-scope MVP, MoSCoW priorities and acceptance criteria for the core e-commerce flow.",Highest,Sprint 1 - Planning & Architecture,Project Management,planning scope,14400,2,1001,US-01..10
+1011,Task,"Create WBS, risk register and Sprint backlog","Prepare executable work breakdown, dependencies, risks and Sprint 1/2 backlog.",High,Sprint 1 - Planning & Architecture,Project Management,planning wbs risk,14400,2,1001,Week 1
+1012,Task,Verify Flyway schema against JPA entities,Check migration scripts and JPA entity definitions are synchronized before backend development.,Highest,Sprint 1 - Planning & Architecture,Database,backend database flyway,14400,2,1001,BE-07 / R-06
+1013,Story,Verify registration flow,"Account is created, password is hashed with BCrypt, and JWT token is returned.",Highest,Sprint 2 - Backend Core,Auth,backend auth must,14400,2,1002,US-01
+1014,Story,Verify login flow,Valid credentials return JWT; invalid credentials return a clear 401 response.,Highest,Sprint 2 - Backend Core,Auth,backend auth must,14400,2,1002,US-02
+1015,Task,Refactor current user extraction from JWT,Remove hard-coded userId = 1L from Cart/Order and resolve the authenticated user from JWT/SecurityContext.,Highest,Sprint 2 - Backend Core,Auth,backend security jwt,28800,3,1002,BE-04 / R-02
+1016,Story,Stabilize cart operations,Verify add/view/update/delete cart operations and stock validation using the authenticated user.,Highest,Sprint 2 - Backend Core,Cart,backend cart must,28800,3,1004,"US-04, US-05"
+1017,Task,Complete OrderService,"Implement order creation, total calculation, stock validation and stock deduction.",Highest,Sprint 2 - Backend Core,Order,backend order highest,28800,3,1005,BE-01
+1018,Task,Create OrderController,"Expose create order, get order/history and admin status update APIs required by the frontend.",Highest,Sprint 2 - Backend Core,Order,backend api order,14400,2,1005,BE-02
+1019,Task,Create Order and OrderItem DTO/Mapper,Use DTOs and mappers; do not return JPA entities directly from APIs.,High,Sprint 2 - Backend Core,Order,backend dto mapper,14400,2,1005,BE-03
+1020,Task,Add transactional checkout and stock rollback,"Ensure create order/items, inventory deduction and cart cleanup are atomic and rollback on failure.",Highest,Sprint 2 - Backend Core,Order,backend transaction stock,14400,3,1005,US-06 / R-01
+1021,Task,Standardize Global Exception Handling,"Handle validation, not found and business errors consistently using a global API error response.",High,Sprint 2 - Backend Core,Common,backend exception,28800,3,1005,BE-05 / R-03
+1022,Story,Order history for current customer,Customer can see only orders placed by their own authenticated account.,High,Sprint 2 - Backend Core,Order,backend order should,14400,2,1005,US-09
+1023,Story,Admin updates order status,"Admin can transition order status through valid states such as Pending, Processing and Completed.",Highest,Sprint 2 - Backend Core,Order,backend admin order,14400,2,1005,US-07
+1024,Task,Integrate Order APIs into api.js,Add functions to create order and fetch order history using Bearer Token.,Highest,Sprint 3 - Frontend Checkout,Frontend,frontend api order,14400,2,1006,FE-01
+1025,Task,Build Checkout Form UI,"Create checkout form for receiver name, phone and shipping address.",Highest,Sprint 3 - Frontend Checkout,Frontend,frontend checkout,28800,3,1006,FE-02
+1026,Task,Connect real Cart to Checkout,Submit the authenticated user cart through the Order API and handle the result.,Highest,Sprint 3 - Frontend Checkout,Frontend,frontend integration cart,14400,2,1006,FE-03
+1027,Task,Add success/error toast notifications,Show clear success and failure feedback for login/cart/checkout actions.,Medium,Sprint 3 - Frontend Checkout,Frontend,frontend ux toast,14400,2,1006,FE-04
+1028,Task,Add loading and error states,Add loading spinner and explicit error states; do not silently swallow API errors.,High,Sprint 3 - Frontend Checkout,Frontend,frontend ux error,28800,3,1006,FE-05
+1029,Task,Validate login → cart → checkout flow,Run the complete UI flow with real backend data and authenticated requests.,Highest,Sprint 3 - Frontend Checkout,Frontend,frontend e2e checkout,14400,2,1006,Week 3
+1030,Story,Verify product listing from PostgreSQL,Product list renders correct PostgreSQL data and supports the expected demo behavior.,High,Sprint 4 - Admin & Product Stabilization,Product,backend product must,14400,2,1003,US-03
+1031,Task,Add Category and Brand APIs,Provide Category/Brand APIs for filtering products and supporting admin functions.,High,Sprint 4 - Admin & Product Stabilization,Product,backend category brand,28800,3,1003,BE-06
+1032,Story,Filter products by Category/Brand,Return the correct product list when category and/or brand filters are supplied.,Medium,Sprint 4 - Admin & Product Stabilization,Product,backend frontend filter,14400,2,1003,US-08
+1033,Task,Verify Admin authorization for management APIs,Confirm only ADMIN can access product/order management operations.,Highest,Sprint 4 - Admin & Product Stabilization,Auth,security admin,14400,2,1003,Week 4
+1034,Task,Standardize demo data,"Prepare stable Product, Category, Brand, User/Admin and order data for testing and demo.",Medium,Sprint 4 - Admin & Product Stabilization,Database,demo seed-data,14400,2,1003,Week 4
+1035,Task,Unit test ProductService,Write JUnit 5 tests for ProductService core behavior.,High,Sprint 5 - Testing & Hardening,QA,qa unit backend,28800,3,1007,QA-01
+1036,Task,Unit test CartService,"Write JUnit 5 tests for cart operations, stock validation and user isolation.",Highest,Sprint 5 - Testing & Hardening,QA,qa unit cart,28800,3,1007,QA-02
+1037,Task,Unit test OrderService,"Write JUnit 5 tests for order creation, total, stock deduction and failure cases.",Highest,Sprint 5 - Testing & Hardening,QA,qa unit order,28800,3,1007,QA-03
+1038,Task,Integration test Auth → Product → Cart → Order,Test the complete backend sequence across modules.,Highest,Sprint 5 - Testing & Hardening,QA,qa integration e2e,57600,5,1007,QA-04
+1039,Task,Responsive test on target resolutions,"Test 320, 375, 390, 430, 768, 1024, 1280 and 1440px.",Medium,Sprint 5 - Testing & Hardening,QA,qa responsive frontend,28800,3,1007,FE-06
+1040,Task,Manual UAT and P1/P2 bug fixing,Run the core MVP UAT flow and resolve priority 1/2 defects before release.,Highest,Sprint 5 - Testing & Hardening,QA,qa uat bugfix,28800,3,1007,Week 5
+1041,Task,Update README setup/run/test guide,"Document prerequisites, local setup, run and test instructions.",High,Sprint 6 - Documentation & Release,Documentation,docs readme,14400,2,1008,DOC-01
+1042,Task,Update REST API documentation,Document the stable REST endpoints used by the MVP.,High,Sprint 6 - Documentation & Release,Documentation,docs api,14400,2,1008,DOC-02
+1043,Task,Prepare demo script and release checklist,Create a deterministic demo flow and pre-demo checklist.,High,Sprint 6 - Documentation & Release,Release,release demo,14400,2,1008,Week 6
+1044,Task,UAT sign-off and MVP release,"Confirm acceptance, release the MVP and record the release outcome.",Highest,Sprint 6 - Documentation & Release,Release,release mvp,14400,2,1008,MVP RELEASED

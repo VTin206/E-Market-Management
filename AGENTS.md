@@ -14,11 +14,13 @@ E-Market Management is a Spring Boot ecommerce backend with a static demo storef
 
 ## Project Structure
 
-- `src/main/java/E_Market_Management/EmarketApplication.java`: Spring Boot entry point and root for component, entity and repository scanning.
-- `src/main/java/E_Market_Management/modules`: business modules (`auth`, `catalog`, `cart`, `order`, `customer`, `review`).
-- Each module owns its `controller`, `application` (services and transactions), `repository`, `domain` (JPA entities), `dto`, and `mapper` packages as needed.
-- `src/main/java/E_Market_Management/modules/auth/security` and `modules/auth/config`: JWT/security implementation and configuration.
-- `src/main/java/E_Market_Management/shared`: cross-cutting DTOs and exceptions.
+- `src/main/java/E_Market_Management/controller`: REST controllers and route definitions.
+- `src/main/java/E_Market_Management/service`: business logic and transactions.
+- `src/main/java/E_Market_Management/repository`: Spring Data JPA repositories.
+- `src/main/java/E_Market_Management/entity`: JPA entities using Lombok.
+- `src/main/java/E_Market_Management/dto`: request/response DTOs grouped by feature.
+- `src/main/java/E_Market_Management/mapper`: mapping between entities and DTOs.
+- `src/main/java/E_Market_Management/security` and `config`: JWT/security setup.
 - `src/main/resources/static/frontend`: static storefront UI.
 - `src/main/resources/application.properties`: active Spring config; imports `.env`.
 - `.env` contains local secrets and must not be edited or committed.
@@ -42,7 +44,7 @@ There is no real lint, format, typecheck, or npm build command in this project y
 
 - Keep the existing package name `E_Market_Management` and feature subpackages.
 - Java classes use PascalCase; methods, fields, and variables use camelCase.
-- Keep backend layering within each module: Controller -> Service (`application`) -> Repository/Mapper -> Entity (`domain`)/DTO.
+- Keep backend layering: Controller -> Service -> Repository/Mapper -> Entity/DTO.
 - Use constructor injection for Spring dependencies, matching the existing code.
 - Put transactional business logic in services. Use `@Transactional` on write operations and `@Transactional(readOnly = true)` for read-only service methods when applicable.
 - Use DTO request/response objects at API boundaries. Do not return JPA entities directly from controllers.
@@ -91,7 +93,7 @@ There is no real lint, format, typecheck, or npm build command in this project y
 
 - Do not commit or push unless the user explicitly asks.
 - Use the existing commit style when committing: examples include `feat(cart): ...`, `feat(product): ...`, `design: ...`, and `refactor(product): ...`.
-- Do not stage unrelated files. Pay special attention to untracked local work such as `src/main/java/E_Market_Management/modules/order/application/OrderService.java`.
+- Do not stage unrelated files. Pay special attention to untracked local work such as `src/main/java/E_Market_Management/service/OrderService.java`.
 - Never rewrite history or force-push unless explicitly requested.
 
 ## Do Not

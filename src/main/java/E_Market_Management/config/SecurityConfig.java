@@ -13,8 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import E_Market_Management.security.CustomUserDetailsService;
-import E_Market_Management.security.JwtAuthenticationFilter;
+import E_Market_Management.auth.security.CustomUserDetailsService;
+import E_Market_Management.auth.security.JwtAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {

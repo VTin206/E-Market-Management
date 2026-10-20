@@ -36,6 +36,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/frontend/**").permitAll()
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,
                     "/api/products/**"

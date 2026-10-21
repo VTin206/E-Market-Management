@@ -5,8 +5,10 @@ import java.math.BigDecimal;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
+import lombok.Setter;
 
 @Data
+@Setter 
 public class ProductUpdateRequest {
     private String name;
     private String description;

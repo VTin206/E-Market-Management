@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.description;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,8 +17,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import E_Market_Management.product.dto.BrandResponse;
+import E_Market_Management.product.dto.CategoryResponse;
 import E_Market_Management.product.dto.ProductCreateRequest;
 import E_Market_Management.product.dto.ProductResponse;
+import E_Market_Management.product.dto.ProductUpdateRequest;
 import E_Market_Management.product.entity.Brand;
 import E_Market_Management.product.entity.Product;
 import E_Market_Management.product.entity.Category;
@@ -148,5 +152,77 @@ public class ProductServiceTest {
         verify(brandRepository).findById(2L);
         verify(productRepository).save(any(Product.class));
         verify(productMapper).toResponse(savedProduct);
+    }
+
+    @Test 
+    void updateProduct_whenRequestValid_returnUpdated() {
+        Category category = Category.builder()
+            .id(2L)
+            .name("Điện thoại")
+            .build();
+
+        Brand brand = Brand.builder()
+            .id(3L)
+            .name("Apple")
+            .build();
+        
+        Product product = Product.builder()
+            .id(1L)
+            .name("iphone 11 pro max")
+            .description("Apple iphone")
+            .price(new BigDecimal("2000000"))
+            .stock(5)
+            .imageUrl("iphone.jpg")
+            .category(category)
+            .brand(brand)
+            .build();
+
+        ProductUpdateRequest updateRequest = new ProductUpdateRequest();  
+        updateRequest.setName("iphone 11 pro max");
+        updateRequest.setDescription("iphone 3 mắt đầu tiên của apple");
+        updateRequest.setStock(5);
+        updateRequest.setPrice(new BigDecimal("2500000"));
+        updateRequest.setImageUrl("iphone.jpg");
+        updateRequest.setCategoryId(category.getId());
+        updateRequest.setBrandId(brand.getId());
+
+        ProductResponse response = new ProductResponse(
+            1L,
+            "iphone 11 pro max",
+            "iphone 3 mắt đầu tiên của apple",
+            new BigDecimal("2500000"),
+            5,
+            "iphone.jpg",
+            CategoryResponse.builder()
+                .id(2L)
+                .name("Điện thoại")
+                .build(),
+            BrandResponse.builder()
+                .name("Apple")
+                .build()
+        );
+        when(productRepository.findById(1L))
+            .thenReturn(Optional.of(product));
+        when(categoryRepository.findById(2L))
+            .thenReturn(Optional.of(category));
+        when(brandRepository.findById(3L))
+            .thenReturn(Optional.of(brand));
+        when(productRepository.save(product))
+            .thenReturn(product);
+        when(productMapper.toResponse(product))
+            .thenReturn(response);
+        
+        ProductResponse actual = productService.updateProduct(1L, updateRequest);
+
+        assertNotNull(actual);
+        assertEquals(response.getId(), actual.getId());
+        assertEquals("iphone 3 mắt đầu tiên của apple", actual.getDescription());
+        assertEquals(new BigDecimal("2500000"), actual.getPrice());
+
+        verify(productRepository).findById(1L);
+        verify(categoryRepository).findById(2L);
+        verify(brandRepository).findById(3L);
+        verify(productRepository).save(product);
+        verify(productMapper).toResponse(product);
     }
 }

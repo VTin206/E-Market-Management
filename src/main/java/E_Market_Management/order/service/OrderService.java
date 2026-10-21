@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import E_Market_Management.order.dto.OrderCreateRequest;
@@ -19,7 +20,8 @@ import E_Market_Management.product.repository.ProductRepository;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class OrderService {
@@ -79,7 +81,7 @@ public class OrderService {
                 BigDecimal.valueOf(itemRequest.getQuantity())
             );
 
-            totalAmount.add(itemTotal);
+            totalAmount = totalAmount.add(itemTotal);
             product.setStock(product.getStock() - itemRequest.getQuantity());
             productRepository.save(product);
         }
@@ -88,5 +90,23 @@ public class OrderService {
         order = orderRepository.save(order);
         List<OrderItem> orderItems = orderItemRepository.findAllByOrder_Id(order.getId());
         return orderMapper.toResponse(order, orderItems);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByUserId(Long userId) {
+
+        return orderRepository.findAllByUser_Id(userId)
+            .stream()
+            .map(order -> orderMapper.toResponse(order, orderItemRepository.findAllByOrder_Id(order.getId())
+            ))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng!"));
+
+        return orderMapper.toResponse(order, orderItemRepository.findAllByOrder_Id(orderId));
     }
 }

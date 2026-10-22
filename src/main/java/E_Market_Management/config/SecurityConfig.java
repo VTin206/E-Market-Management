@@ -41,6 +41,10 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.GET,
                     "/api/products/**"
                 ).permitAll()
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/orders"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

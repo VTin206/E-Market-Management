@@ -1,6 +1,8 @@
 package E_Market_Management.order.dto;
 
 import java.util.List;
+
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
@@ -16,6 +18,5 @@ public class OrderCreateRequest {
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;
 
-    @NotEmpty(message = "Đơn hàng phải có ít nhất 1 sản phẩm")
-    private List<OrderItemCreateRequest> items;
+    private List<@Valid OrderItemCreateRequest> items;
 }

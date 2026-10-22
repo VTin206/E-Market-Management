@@ -18,5 +18,6 @@ public class OrderCreateRequest {
     @NotBlank(message = "Địa chỉ không được để trống")
     private String address;
 
+    @NotEmpty(message = "Đơn hàng phải có ít nhất 1 sản phẩm")
     private List<@Valid OrderItemCreateRequest> items;
 }

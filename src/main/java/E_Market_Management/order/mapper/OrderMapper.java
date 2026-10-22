@@ -33,7 +33,7 @@ public class OrderMapper {
         
         return OrderResponse.builder()
             .id(order.getId())
-            .userId(order.getUser().getId())
+            .userId(order.getUser() != null ? order.getUser().getId() : null)
             .customerName(order.getCustomerName())
             .phone(order.getPhone())
             .address(order.getAddress())

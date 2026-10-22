@@ -2,6 +2,7 @@ package E_Market_Management.cart.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import E_Market_Management.auth.security.CustomUserDetails;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import E_Market_Management.cart.dto.AddToCartRequest;
 import E_Market_Management.cart.dto.CartResponse;
 import E_Market_Management.cart.dto.UpdateCartItemRequest;
@@ -21,34 +24,49 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/cart")
 public class CartController {
     public final CartService cartService;
-    public Long userId = 1L; //Tạm thời fix cứng
 
     public CartController(CartService cartService) {
         this.cartService = cartService;
     }
 
     @GetMapping
-    public ResponseEntity<CartResponse> getCart() {
+    public ResponseEntity<CartResponse> getCart(
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails.getId(); 
         return ResponseEntity.ok(
             cartService.getCart(userId)
         );
     }
 
     @PostMapping("/items")
-    public ResponseEntity<CartResponse> addToCart(@Valid @RequestBody AddToCartRequest request) {
+    public ResponseEntity<CartResponse> addToCart(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @Valid @RequestBody AddToCartRequest request
+    ) {
+        Long userId = userDetails.getId();
         CartResponse response = cartService.addToCart(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/items/{itemId}")
-    public ResponseEntity<CartResponse> updateCartItem(@PathVariable Long itemId, @Valid @RequestBody UpdateCartItemRequest request) {
+    public ResponseEntity<CartResponse> updateCartItem(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long itemId, 
+        @Valid @RequestBody UpdateCartItemRequest request
+    ) {
+        Long userId = userDetails.getId();
         return ResponseEntity.ok(
             cartService.updateCartItem(userId, itemId, request)
         );
     }
 
     @DeleteMapping("/items/{itemId}")
-    public ResponseEntity<CartResponse> removeItem(@PathVariable Long itemId) {
+    public ResponseEntity<CartResponse> removeItem(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long itemId
+    ) {
+        Long userId = userDetails.getId();
         return ResponseEntity.ok(
             cartService.removeItem(userId, itemId)
         );

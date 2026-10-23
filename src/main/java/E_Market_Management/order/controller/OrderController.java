@@ -36,7 +36,6 @@ public class OrderController {
         OrderResponse response = orderService.createOrder(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-<<<<<<< HEAD
   
     @GetMapping
     public ResponseEntity<List<OrderResponse>> getAllMyOrders(
@@ -55,14 +54,4 @@ public class OrderController {
             orderService.getOrder(userDetails.getId(), id)
         );
     }
-=======
-
-    @GetMapping
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
-        return ResponseEntity.ok(
-            orderService.getAllOrders()
-        );
-    }
-    
->>>>>>> 806cc22 (feate(order): add get all orders for admin)
 }

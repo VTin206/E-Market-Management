@@ -17,6 +17,7 @@ import E_Market_Management.cart.entity.CartItem;
 import E_Market_Management.order.dto.CheckOutLine;
 import E_Market_Management.order.dto.OrderCreateRequest;
 import E_Market_Management.order.dto.OrderResponse;
+import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
 import E_Market_Management.order.repository.OrderRepository;
@@ -26,7 +27,10 @@ import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
+<<<<<<< HEAD
 import org.springframework.web.server.ResponseStatusException;
+=======
+>>>>>>> 806cc22 (feate(order): add get all orders for admin)
 
 @Service
 public class OrderService {
@@ -161,10 +165,15 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public OrderResponse getOrder(Long userId, Long orderId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng!"));
-
-        return orderMapper.toResponse(order, orderItemRepository.findAllByOrder_Id(orderId));
+    public List<OrderResponse> getAllOrders() {
+        List<Order> orders = orderRepository.findAll();
+        List<OrderResponse> responses = orders.stream()
+            .map(order -> {
+                List<OrderItem> orderItem = orderItemRepository.findAllByOrder_Id(order.getId());
+                return orderMapper.toResponse(order, orderItem);
+            })
+            .toList();
+        
+        return responses;
     }
 }

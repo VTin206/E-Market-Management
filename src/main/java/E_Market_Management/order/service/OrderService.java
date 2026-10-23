@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import E_Market_Management.cart.entity.Cart;
@@ -27,10 +26,8 @@ import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
-<<<<<<< HEAD
 import org.springframework.web.server.ResponseStatusException;
-=======
->>>>>>> 806cc22 (feate(order): add get all orders for admin)
+
 
 @Service
 public class OrderService {
@@ -175,5 +172,15 @@ public class OrderService {
             .toList();
         
         return responses;
+    }
+
+    @Transactional 
+    public OrderResponse updateStatus(UpdateOrderStatusRequest request, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+        
+        order.setStatus(request.getStatus());
+        orderRepository.save(order);
+        return orderMapper.toResponse(order, order.getOrderItems());
     }
 }

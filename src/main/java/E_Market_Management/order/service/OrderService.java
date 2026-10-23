@@ -26,6 +26,8 @@ import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 
 @Service
 public class OrderService {

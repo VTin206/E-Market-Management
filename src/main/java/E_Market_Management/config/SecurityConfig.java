@@ -2,6 +2,7 @@ package E_Market_Management.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -45,6 +46,10 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/orders"
                 ).permitAll()
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/orders"
+                ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

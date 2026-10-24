@@ -183,4 +183,12 @@ public class OrderService {
         orderRepository.save(order);
         return orderMapper.toResponse(order, order.getOrderItems());
     }
+
+    @Transactional 
+    public OrderResponse getCurrentOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+        
+        return orderMapper.toResponse(order, order.getOrderItems());
+    }
 }

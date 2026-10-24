@@ -63,7 +63,6 @@ public class OrderController {
             orderService.getCurrentOrder(orderId)
         );
     }
-    
 
     @PutMapping("/{id}")
     public ResponseEntity updateStatus(

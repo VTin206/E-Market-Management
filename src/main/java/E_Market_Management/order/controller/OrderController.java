@@ -42,11 +42,18 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
   
-    @GetMapping
+    @GetMapping("/me")
     public ResponseEntity<List<OrderResponse>> getAllMyOrders(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(
             orderService.getOrdersByUserId(userDetails.getId())
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        return ResponseEntity.ok(
+            orderService.getAllOrders()
         );
     }
 

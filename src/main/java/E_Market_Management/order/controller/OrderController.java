@@ -57,6 +57,14 @@ public class OrderController {
         );
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getCurrentOrder(@PathVariable("id") Long orderId) {
+        return ResponseEntity.ok(
+            orderService.getCurrentOrder(orderId)
+        );
+    }
+    
+
     @PutMapping("/{id}")
     public ResponseEntity updateStatus(
         @RequestBody @Valid UpdateOrderStatusRequest request,

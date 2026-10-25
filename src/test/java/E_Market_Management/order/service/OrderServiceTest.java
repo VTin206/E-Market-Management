@@ -2,6 +2,7 @@ package E_Market_Management.order.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +23,7 @@ import E_Market_Management.order.entity.OrderItem;
 import E_Market_Management.order.mapper.OrderMapper;
 import E_Market_Management.order.repository.OrderItemRepository;
 import E_Market_Management.order.repository.OrderRepository;
+import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,5 +88,13 @@ public class OrderServiceTest {
     
         verify(orderRepository).findById(1L);
         verify(orderMapper).toResponse(order, orderItems);
+    }
+
+    @Test 
+    public void getCurrentOrder_whenOrderNotExist_throwResourceNotFoundException() {
+        when(orderRepository.findById(1L))
+            .thenReturn(Optional.empty());
+        
+        assertThrows(ResourceNotFoundException.class, () -> orderService.getCurrentOrder(1L) );
     }
 }

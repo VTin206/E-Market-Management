@@ -22,9 +22,12 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
+    public ResponseEntity<List<ProductResponse>> getAllProducts(
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(required = false) Long brandId
+    ) {
         return ResponseEntity.ok(
-            productService.getAllProducts()
+            productService.getAllProducts(categoryId, brandId)
         );
     }
 

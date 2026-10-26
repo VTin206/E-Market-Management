@@ -99,10 +99,20 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
-            .stream()
-            .map(productMapper::toResponse)
+    public List<ProductResponse> getAllProducts(Long categoryId, Long brandId) {
+        List<Product> products;
+        if (categoryId == null && brandId == null) {
+            products = productRepository.findAll();
+        } else if (categoryId == null && brandId != null) {
+            products = productRepository.findByBrand_Id(brandId);
+        } else if (categoryId != null && brandId == null) {
+            products = productRepository.findByCategory_Id(categoryId);
+        } else {
+            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId)
+        }
+
+        return products.stream()
+            .map(product -> productMapper.toResponse(product))
             .toList();
     }
 

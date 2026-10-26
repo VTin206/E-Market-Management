@@ -50,6 +50,18 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.GET,
                     "/api/orders"
                 ).hasRole("ADMIN")
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/membership"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/membership"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/category"
+                ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

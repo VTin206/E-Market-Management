@@ -1,4 +1,4 @@
-package E_Market_Management.product.dto;
+package E_Market_Management.brand.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CategoryResponse {
-    private Long id;
+public class BrandResponse {
     private String name;
-    private String description;
+    private String country;
 }

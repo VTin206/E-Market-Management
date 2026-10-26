@@ -4,7 +4,9 @@ Backend được tổ chức theo feature/module thay vì gom toàn bộ class t
 
 - `auth`: đăng ký, đăng nhập và JWT security.
 - `user`: user entity, repository và DTO.
-- `product`: product, brand, category cùng controller/service/repository/mapper/DTO.
+- `product`: sản phẩm cùng controller/service/repository/mapper/DTO.
+- `brand`: thương hiệu, entity/DTO/repository của thương hiệu.
+- `category`: danh mục, entity/DTO/repository của danh mục.
 - `cart`: giỏ hàng và cart item.
 - `order`: đơn hàng, order item và mapper.
 - `membership`: hạng thành viên.
@@ -22,6 +24,16 @@ src/main/java/E_Market_Management/product/
 ├── mapper/
 ├── repository/
 └── service/
+
+src/main/java/E_Market_Management/brand/
+├── dto/
+├── entity/
+└── repository/
+
+src/main/java/E_Market_Management/category/
+├── dto/
+├── entity/
+└── repository/
 ```
 
 Các API route và schema Flyway được giữ nguyên; thay đổi này tổ chức lại boundary của mã nguồn theo module.

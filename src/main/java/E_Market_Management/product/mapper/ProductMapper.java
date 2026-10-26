@@ -2,11 +2,11 @@ package E_Market_Management.product.mapper;
 
 import org.springframework.stereotype.Component;
 
-import E_Market_Management.product.dto.BrandResponse;
-import E_Market_Management.product.dto.CategoryResponse;
+import E_Market_Management.brand.dto.BrandResponse;
+import E_Market_Management.brand.entity.Brand;
+import E_Market_Management.category.dto.CategoryResponse;
+import E_Market_Management.category.entity.Category;
 import E_Market_Management.product.dto.ProductResponse;
-import E_Market_Management.product.entity.Brand;
-import E_Market_Management.product.entity.Category;
 import E_Market_Management.product.entity.Product;
 
 @Component

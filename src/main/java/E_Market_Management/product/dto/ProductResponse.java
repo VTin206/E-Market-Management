@@ -2,8 +2,8 @@ package E_Market_Management.product.dto;
 
 import java.math.BigDecimal;
 
-import E_Market_Management.product.dto.BrandResponse;
-import E_Market_Management.product.dto.CategoryResponse;
+import E_Market_Management.brand.dto.BrandResponse;
+import E_Market_Management.category.dto.CategoryResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

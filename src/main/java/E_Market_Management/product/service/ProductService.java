@@ -5,15 +5,15 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import E_Market_Management.brand.entity.Brand;
+import E_Market_Management.brand.repository.BrandRepository;
+import E_Market_Management.category.entity.Category;
+import E_Market_Management.category.repository.CategoryRepository;
 import E_Market_Management.product.dto.ProductCreateRequest;
 import E_Market_Management.product.dto.ProductResponse;
 import E_Market_Management.product.dto.ProductUpdateRequest;
-import E_Market_Management.product.entity.Brand;
-import E_Market_Management.product.entity.Category;
 import E_Market_Management.product.entity.Product;
 import E_Market_Management.product.mapper.ProductMapper;
-import E_Market_Management.product.repository.BrandRepository;
-import E_Market_Management.product.repository.CategoryRepository;
 import E_Market_Management.product.repository.ProductRepository;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
 

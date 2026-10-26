@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import E_Market_Management.brand.entity.Brand;
+import E_Market_Management.category.entity.Category;
 import E_Market_Management.review.entity.Review;
 
 @Entity

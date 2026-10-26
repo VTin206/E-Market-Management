@@ -4,12 +4,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import E_Market_Management.Exception.ConflictException;
 import E_Market_Management.membership.dto.MembershipCreateRequest;
 import E_Market_Management.membership.dto.MembershipResponse;
 import E_Market_Management.membership.entity.Membership;
 import E_Market_Management.membership.mapper.MembershipMapper;
 import E_Market_Management.membership.repository.MembershipRepository;
+import E_Market_Management.shared.exception.ConflictException;
 
 @Service 
 public class MembershipService {
@@ -25,8 +25,9 @@ public class MembershipService {
     }
 
     public MembershipResponse createMembership(MembershipCreateRequest request) {
-        Membership check = membershipRepository.findByName(request.getName())
-            .orElseThrow(() -> new ConflictException("Đã tồn tại hạng thành viên này!"))
+        if(membershipRepository.findByName(request.getName()).isPresent()) {
+            throw new ConflictException("Đã tồn tại hạng thành viên này!");
+        }
 
         Membership membership = Membership.builder()
             .name(request.getName())

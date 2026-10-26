@@ -1,8 +1,11 @@
 package E_Market_Management.membership.mapper;
 
+import org.springframework.stereotype.Component;
+
 import E_Market_Management.membership.dto.MembershipResponse;
 import E_Market_Management.membership.entity.Membership;
 
+@Component 
 public class MembershipMapper {
     public MembershipResponse toResponse (Membership membership) {
         MembershipResponse response = MembershipResponse.builder()

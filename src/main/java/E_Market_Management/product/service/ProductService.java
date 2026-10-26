@@ -108,7 +108,7 @@ public class ProductService {
         } else if (categoryId != null && brandId == null) {
             products = productRepository.findByCategory_Id(categoryId);
         } else {
-            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId)
+            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId);
         }
 
         return products.stream()

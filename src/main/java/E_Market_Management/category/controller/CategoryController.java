@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 @RestController 
@@ -34,4 +36,12 @@ public class CategoryController {
             categoryService.createCategory(request)
         );
     }
+
+    @GetMapping
+    public ResponseEntity<List<CategoryResponse>> getAllCategory() {
+        return ResponseEntity.ok(
+            categoryService.getAllCategory()
+        );
+    }
+    
 }

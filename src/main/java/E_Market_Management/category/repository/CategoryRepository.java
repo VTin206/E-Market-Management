@@ -10,4 +10,6 @@ import E_Market_Management.product.entity.Product;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByName(String name);
+
+    List<Category> getAllCategories();
 }

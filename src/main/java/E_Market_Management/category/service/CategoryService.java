@@ -12,6 +12,7 @@ import E_Market_Management.category.mapper.CategoryMapper;
 import E_Market_Management.category.repository.CategoryRepository;
 import E_Market_Management.product.dto.ProductResponse;
 import E_Market_Management.shared.exception.ConflictException;
+import E_Market_Management.shared.exception.ResourceNotFoundException;
 
 @Service 
 public class CategoryService {
@@ -37,5 +38,20 @@ public class CategoryService {
             .build();
 
         return categoryMapper.toResponse(categoryRepository.save(category));
+    }
+
+    public List<CategoryResponse> getAllCategory() {
+        
+        List<Category> categories = categoryRepository.getAllCategories();
+        
+        if(categories.isEmpty()) {
+            throw new ResourceNotFoundException("Hiện tại vẫn chưa có danh mục nào!");
+        }
+
+        List<CategoryResponse> responses = categories.stream()
+            .map(category -> categoryMapper.toResponse(category))
+            .toList();
+        
+        return responses;
     }
 }

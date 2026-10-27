@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import E_Market_Management.cart.repository.CartItemRepository;
 import E_Market_Management.category.dto.CategoryRequest;
 import E_Market_Management.category.dto.CategoryResponse;
 import E_Market_Management.category.entity.Category;
@@ -16,15 +17,17 @@ import E_Market_Management.shared.exception.ResourceNotFoundException;
 
 @Service 
 public class CategoryService {
+    private final CartItemRepository cartItemRepository;
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
     public CategoryService(
         CategoryRepository categoryRepository,
-        CategoryMapper categoryMapper
+        CategoryMapper categoryMapper, CartItemRepository cartItemRepository
     ) {
         this.categoryRepository = categoryRepository;
         this.categoryMapper = categoryMapper;
+        this.cartItemRepository = cartItemRepository;
     }
 
     public CategoryResponse createCategory(CategoryRequest request) {
@@ -42,7 +45,7 @@ public class CategoryService {
 
     public List<CategoryResponse> getAllCategory() {
         
-        List<Category> categories = categoryRepository.getAllCategories();
+        List<Category> categories = categoryRepository.findAll();
         
         if(categories.isEmpty()) {
             throw new ResourceNotFoundException("Hiện tại vẫn chưa có danh mục nào!");
@@ -53,5 +56,15 @@ public class CategoryService {
             .toList();
         
         return responses;
+    }
+
+    public CategoryResponse updateCategory(Long categoryId, CategoryRequest request) {
+        Category category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục này!"));
+    
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+
+        return categoryMapper.toResponse(categoryRepository.save(category));
     }
 }

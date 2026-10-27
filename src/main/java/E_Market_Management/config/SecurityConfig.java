@@ -39,15 +39,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/frontend/**").permitAll()
                 .requestMatchers(
-                    org.springframework.http.HttpMethod.GET,
+                    HttpMethod.GET,
                     "/api/products/**"
                 ).permitAll()
                 .requestMatchers(
-                    org.springframework.http.HttpMethod.POST,
+                    HttpMethod.POST,
                     "/api/orders"
                 ).permitAll()
                 .requestMatchers(
-                    org.springframework.http.HttpMethod.GET,
+                    HttpMethod.GET,
                     "/api/orders"
                 ).hasRole("ADMIN")
                 .requestMatchers(
@@ -59,8 +59,20 @@ public class SecurityConfig {
                     "/api/membership"
                 ).hasRole("ADMIN")
                 .requestMatchers(
-                    org.springframework.http.HttpMethod.POST,
+                    HttpMethod.POST,
                     "/api/category"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/category/**"
+                ).permitAll()
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/category/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/category/**"
                 ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

@@ -11,7 +11,6 @@ import E_Market_Management.category.dto.CategoryResponse;
 import E_Market_Management.category.entity.Category;
 import E_Market_Management.category.mapper.CategoryMapper;
 import E_Market_Management.category.repository.CategoryRepository;
-import E_Market_Management.product.dto.ProductResponse;
 import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
 
@@ -66,5 +65,11 @@ public class CategoryService {
         category.setDescription(request.getDescription());
 
         return categoryMapper.toResponse(categoryRepository.save(category));
+    }
+
+    public void deleteCategory(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục hiện tại!"));
+        categoryRepository.delete(category);
     }
 }

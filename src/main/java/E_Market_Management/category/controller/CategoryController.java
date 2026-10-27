@@ -3,7 +3,7 @@ package E_Market_Management.category.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import E_Market_Management.category.dto.CategoryCreateRequest;
+import E_Market_Management.category.dto.CategoryRequest;
 import E_Market_Management.category.dto.CategoryResponse;
 import E_Market_Management.category.service.CategoryService;
 import E_Market_Management.product.dto.ProductResponse;
@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 
 
@@ -31,7 +33,7 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> createCategory(@RequestBody @Valid CategoryCreateRequest request) {
+    public ResponseEntity<CategoryResponse> createCategory(@RequestBody @Valid CategoryRequest request) {
         return ResponseEntity.ok(
             categoryService.createCategory(request)
         );
@@ -44,4 +46,11 @@ public class CategoryController {
         );
     }
     
+
+    @PutMapping("/{id}")
+    public CategoryResponse updateCategory(@PathVariable String id, @RequestBody String entity) {
+        //TODO: process PUT request
+        
+        return entity;
+    }
 }

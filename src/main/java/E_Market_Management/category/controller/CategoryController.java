@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RestController;
 import E_Market_Management.category.dto.CategoryRequest;
 import E_Market_Management.category.dto.CategoryResponse;
 import E_Market_Management.category.service.CategoryService;
-import E_Market_Management.product.dto.ProductResponse;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 
@@ -63,4 +61,14 @@ public class CategoryController {
         categoryService.deleteCategory(categoryId);
         return ResponseEntity.noContent().build();
     } 
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryResponse> getCategory(
+        @PathVariable("id") Long categoryId
+    ) {
+        return ResponseEntity.ok(
+            categoryService.getCategory(categoryId)
+        );
+    }
+
 }

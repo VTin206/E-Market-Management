@@ -72,4 +72,11 @@ public class CategoryService {
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục hiện tại!"));
         categoryRepository.delete(category);
     }
+
+    public CategoryResponse getCategory(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục!"));
+
+        return categoryMapper.toResponse(category);
+    }
 }

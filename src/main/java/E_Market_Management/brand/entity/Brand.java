@@ -33,6 +33,8 @@ public class Brand {
 
     private String country;
 
+    private String logo;
+
     @OneToMany(mappedBy = "brand")
     private List<Product> products;
 }

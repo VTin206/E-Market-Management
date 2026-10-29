@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import E_Market_Management.brand.dto.BrandCreateRequest;
+import E_Market_Management.brand.dto.BrandRequest;
 import E_Market_Management.brand.dto.BrandResponse;
 import E_Market_Management.brand.entity.Brand;
 import E_Market_Management.brand.mapper.BrandMapper;
@@ -23,7 +23,7 @@ public class BrandService {
         this.brandMapper = brandMapper;
     }
 
-    public BrandResponse createBrand(BrandCreateRequest request) {
+    public BrandResponse createBrand(BrandRequest request) {
         if(brandRepository.findByName(request.getName()).isPresent()) {
             throw new ConflictException("Đã tồn tại thương hiệu này");
         }
@@ -49,6 +49,17 @@ public class BrandService {
     public BrandResponse getBrand(Long brandId) {
         Brand brand = brandRepository.findById(brandId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm tháy thương hiệu!"));
+
+        return brandMapper.toResponse(brand);
+    }
+
+    public BrandResponse updateBrand(Long brandId, BrandRequest request) {
+        Brand brand = brandRepository.findById(brandId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu"));
+        
+        brand.setName(request.getName());
+        brand.setCountry(request.getCountry());
+        brand.setLogo(request.getLogo());
 
         return brandMapper.toResponse(brand);
     }

@@ -3,7 +3,7 @@ package E_Market_Management.brand.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import E_Market_Management.brand.dto.BrandCreateRequest;
+import E_Market_Management.brand.dto.BrandRequest;
 import E_Market_Management.brand.dto.BrandResponse;
 import E_Market_Management.brand.service.BrandService;
 import jakarta.validation.Valid;
@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PutMapping;
+
 
 
 
@@ -29,7 +31,7 @@ public class BrandController {
     }
 
     @PostMapping
-    public ResponseEntity<BrandResponse> createBrand(@RequestBody @Valid BrandCreateRequest request) {
+    public ResponseEntity<BrandResponse> createBrand(@RequestBody @Valid BrandRequest request) {
         return ResponseEntity.ok(
             brandService.createBrand(request)
         );
@@ -42,10 +44,17 @@ public class BrandController {
         );
     }
     
-    @GetMapping("{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<BrandResponse> getBrand(@PathVariable("id") Long brandId) {
         return ResponseEntity.ok(
             brandService.getBrand(brandId)
+        );
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BrandResponse> updateBrand(@PathVariable Long brandId, @RequestBody BrandRequest request) {
+        return ResponseEntity.ok(
+            brandService.updateBrand(brandId, request)
         );
     }
     

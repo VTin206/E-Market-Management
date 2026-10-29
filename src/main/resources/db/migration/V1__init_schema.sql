@@ -33,7 +33,8 @@ CREATE TABLE category (
 CREATE TABLE brand (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100),
-    country VARCHAR(100)
+    country VARCHAR(100),
+    logo VARCHAR(100)
 );
 
 -- Product

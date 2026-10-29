@@ -2,7 +2,7 @@ package E_Market_Management.brand.mapper;
 
 import org.springframework.stereotype.Component;
 
-import E_Market_Management.brand.dto.BrandCreateRequest;
+import E_Market_Management.brand.dto.BrandRequest;
 import E_Market_Management.brand.dto.BrandResponse;
 import E_Market_Management.brand.entity.Brand;
 

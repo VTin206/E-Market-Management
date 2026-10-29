@@ -13,7 +13,7 @@
     <header class="site-header" id="home">
         <div class="topbar">
             <div class="shell topbar-inner">
-                <span>Demo giao diện bán điện thoại và thiết bị công nghệ</span>
+                <span>Cửa hàng điện thoại và thiết bị công nghệ</span>
                 <span>Miễn phí giao hàng nội thành cho đơn từ 2.000.000đ</span>
             </div>
         </div>
@@ -27,7 +27,7 @@
                 </span>
             </a>
 
-            <button class="catalog-button" id="catalogToggle" type="button">
+            <button class="catalog-button" id="catalogToggle" type="button" aria-label="Mở danh mục sản phẩm">
                 <i data-lucide="menu"></i>
                 <span>Danh mục</span>
             </button>
@@ -42,27 +42,29 @@
                     <i data-lucide="phone-call"></i>
                     <span>Hotline<strong>1900 6750</strong></span>
                 </a>
-                <button class="header-link" id="storeButton" type="button">
+                <button class="header-link" id="storeButton" type="button" aria-label="Hệ thống cửa hàng">
                     <i data-lucide="map-pin"></i>
                     <span>Hệ thống<strong>cửa hàng</strong></span>
                 </button>
-                <button class="header-link" id="orderLookupButton" type="button">
+                <button class="header-link" id="orderLookupButton" type="button" aria-label="Tra cứu đơn hàng">
                     <i data-lucide="clipboard-list"></i>
                     <span>Tra cứu<strong>đơn hàng</strong></span>
                 </button>
-                <button class="header-link cart-link" id="cartButton" type="button">
+                <button class="header-link cart-link" id="cartButton" type="button" aria-label="Giỏ hàng">
                     <i data-lucide="shopping-bag"></i>
                     <span>Giỏ hàng<strong>Sản phẩm</strong></span>
                     <em class="cart-count" id="cartCount">0</em>
                 </button>
                 <div class="account-menu">
-                    <button class="account-button" id="accountButton" type="button">
+                    <button class="account-button" id="accountButton" type="button" aria-label="Tài khoản">
                         <i data-lucide="user-round"></i>
                         <span id="accountLabel">Thông tin</span>
                     </button>
                     <div class="account-dropdown">
                         <button data-auth-open="login" type="button">Đăng nhập</button>
                         <button data-auth-open="register" type="button">Đăng ký</button>
+                        <button id="myOrdersButton" type="button">Đơn hàng của tôi</button>
+                        <button id="logoutButton" type="button">Đăng xuất</button>
                         <button type="button">Danh sách yêu thích</button>
                         <button type="button">So sánh sản phẩm</button>
                     </div>
@@ -99,12 +101,12 @@
     <main>
         <section class="hero shell listing-view">
             <div class="hero-copy">
-                <span class="eyebrow">E-Market Demo</span>
+                <span class="eyebrow">Mua sắm công nghệ dễ dàng</span>
                 <h1>Điện thoại chính hãng, giá tốt mỗi ngày</h1>
-                <p>Giao diện ecommerce lấy cảm hứng từ cấu trúc Dola Phone: header rõ ràng, danh mục dễ quét, thẻ sản phẩm ổn định và các khu vực bán hàng quen thuộc.</p>
+                <p>Khám phá điện thoại, máy tính bảng, máy tính và phụ kiện. Chọn sản phẩm, quản lý giỏ hàng và gửi đơn đặt hàng trực tuyến.</p>
                 <div class="hero-actions">
                     <a class="primary-button" href="#products">Xem sản phẩm</a>
-                    <button class="ghost-button" id="heroLoginButton" type="button">Đăng nhập demo</button>
+                    <button class="ghost-button" id="heroLoginButton" type="button">Đăng nhập / Đăng ký</button>
                 </div>
             </div>
             <div class="hero-showcase" aria-hidden="true">
@@ -145,9 +147,28 @@
         <div class="cart-items" id="cartItems"></div>
         <div class="cart-summary">
             <div><span>Tạm tính</span><strong id="cartTotal">0đ</strong></div>
-            <button class="primary-button full" type="button">Thanh toán</button>
+            <button class="primary-button full" id="checkoutButton" type="button">Đặt hàng</button>
         </div>
     </aside>
+
+    <div class="modal-backdrop hidden" id="checkoutBackdrop"></div>
+    <section class="auth-modal checkout-modal hidden" id="checkoutModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+        <div class="panel-head">
+            <div>
+                <span>Thông tin giao hàng</span>
+                <strong id="checkoutTitle">Xác nhận đặt hàng</strong>
+            </div>
+            <button id="closeCheckout" type="button" aria-label="Đóng"><i data-lucide="x"></i></button>
+        </div>
+        <form class="auth-form" id="checkoutForm">
+            <p class="checkout-note">Đơn hàng sẽ được tạo với trạng thái chờ xác nhận. Nhân viên cửa hàng sẽ liên hệ bạn về giao hàng và thanh toán.</p>
+            <label>Họ tên người nhận<input name="customerName" type="text" required autocomplete="name" maxlength="255"></label>
+            <label>Số điện thoại<input name="phone" type="tel" required autocomplete="tel" maxlength="20"></label>
+            <label>Địa chỉ nhận hàng<textarea name="address" required autocomplete="street-address" rows="3" maxlength="255"></textarea></label>
+            <div class="checkout-total"><span>Tổng thanh toán</span><strong id="checkoutTotal">0đ</strong></div>
+            <button class="primary-button full" id="placeOrderButton" type="submit">Xác nhận đặt hàng</button>
+        </form>
+    </section>
 
     <div class="modal-backdrop hidden" id="authBackdrop"></div>
     <section class="auth-modal hidden" id="authModal" aria-hidden="true">
@@ -175,6 +196,18 @@
             <label>Mật khẩu<input name="password" type="password" required minlength="6" autocomplete="new-password"></label>
             <button class="primary-button full" type="submit">Tạo tài khoản</button>
         </form>
+    </section>
+
+    <div class="modal-backdrop hidden" id="ordersBackdrop"></div>
+    <section class="auth-modal order-modal hidden" id="ordersModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ordersTitle">
+        <div class="panel-head">
+            <div>
+                <span>Tài khoản</span>
+                <strong id="ordersTitle">Đơn hàng của tôi</strong>
+            </div>
+            <button id="closeOrders" type="button" aria-label="Đóng"><i data-lucide="x"></i></button>
+        </div>
+        <div class="order-list" id="orderList" aria-live="polite"></div>
     </section>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>

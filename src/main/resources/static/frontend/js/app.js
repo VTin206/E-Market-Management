@@ -1,11 +1,13 @@
 (function () {
+    const guestCartKey = "emarket_guest_cart";
     const state = {
         products: [],
         cart: [],
-        filter: "new",
+        filter: "all",
         query: "",
         selectedProduct: null,
-        quantity: 1
+        quantity: 1,
+        submittingOrder: false
     };
 
     const $ = (selector) => document.querySelector(selector);
@@ -26,11 +28,24 @@
         cartBackdrop: $("#cartBackdrop"),
         closeCart: $("#closeCart"),
         cartItems: $("#cartItems"),
+        checkoutButton: $("#checkoutButton"),
+        checkoutModal: $("#checkoutModal"),
+        checkoutBackdrop: $("#checkoutBackdrop"),
+        closeCheckout: $("#closeCheckout"),
+        checkoutForm: $("#checkoutForm"),
+        checkoutTotal: $("#checkoutTotal"),
+        placeOrderButton: $("#placeOrderButton"),
         cartTotal: $("#cartTotal"),
         cartTitle: $("#cartTitle"),
         cartCount: $("#cartCount"),
         accountButton: $("#accountButton"),
         accountLabel: $("#accountLabel"),
+        myOrdersButton: $("#myOrdersButton"),
+        logoutButton: $("#logoutButton"),
+        ordersModal: $("#ordersModal"),
+        ordersBackdrop: $("#ordersBackdrop"),
+        closeOrders: $("#closeOrders"),
+        orderList: $("#orderList"),
         authModal: $("#authModal"),
         authBackdrop: $("#authBackdrop"),
         closeAuth: $("#closeAuth"),
@@ -83,6 +98,9 @@
         const types = ["phone", "tablet", "laptop", "watch", "earbuds", "accessory"];
         const type = types.includes(product.imageType) ? product.imageType : "phone";
         const label = escapeHtml(product.name || "Sản phẩm công nghệ");
+        if (product.imageUrl) {
+            return `<div class="product-photo ${compact ? "compact" : ""}"><img class="product-image" src="${escapeHtml(product.imageUrl)}" alt="${label}" loading="lazy"></div>`;
+        }
         const theme = product.theme ? ` style="--mock-bg:${String(product.theme).replaceAll('"', "&quot;")}"` : "";
         return `<div class="device-mock ${type} ${compact ? "compact" : ""}" role="img" aria-label="${label}"><span${theme}></span></div>`;
     }
@@ -102,8 +120,8 @@
                     <strong class="price">${formatMoney(product.price)}</strong>
                     ${product.oldPrice ? `<span class="old-price">${formatMoney(product.oldPrice)}</span>` : ""}
                 </div>
-                <div class="warranty">${escapeHtml(product.warranty)}</div>
-                <div class="sold-line">${icon("chart-no-axes-column", 15)} Đã bán ${product.sold || 0}</div>
+                    ${product.warranty ? `<div class="warranty">${escapeHtml(product.warranty)}</div>` : ""}
+                    ${product.sold == null ? "" : `<div class="sold-line">${icon("chart-no-axes-column", 15)} Đã bán ${Number(product.sold) || 0}</div>`}
                 <div class="card-actions">
                     <button class="text-button" type="button">${icon("heart", 16)} Thích</button>
                     <button class="text-button" type="button">${icon("git-compare-arrows", 16)} So sánh</button>
@@ -111,6 +129,37 @@
                 </div>
             </article>
         `;
+    }
+
+    function categoryType(name) {
+        const value = name.toLowerCase();
+        if (value.includes("ipad") || value.includes("tablet")) return "tablet";
+        if (value.includes("mac") || value.includes("laptop")) return "laptop";
+        if (value.includes("watch")) return "watch";
+        if (value.includes("airpod") || value.includes("earbud")) return "earbuds";
+        if (value.includes("phụ kiện") || value.includes("accessory")) return "accessory";
+        return "phone";
+    }
+
+    function renderCategories() {
+        const categories = [...new Set(state.products.map((product) => product.category?.name).filter(Boolean))];
+        nodes.categories.innerHTML = `
+            <div class="section-title"><span></span><h2>Danh mục sản phẩm</h2><a href="#products">Xem tất cả</a></div>
+            ${categories.length ? `<div class="category-grid">
+                ${categories.map((name) => {
+                    const count = state.products.filter((product) => product.category?.name === name).length;
+                    const preset = window.demoCategories.find((category) => category.name === name);
+                    return `<article class="category-card" data-category="${escapeHtml(name)}">
+                        <div class="category-visuals">
+                            <div class="category-tile">${productVisual({ name, imageType: preset?.type || categoryType(name), theme: preset?.theme }, true)}</div>
+                            <div class="category-tile dim">${productVisual({ name, imageType: preset?.type || categoryType(name), theme: preset?.theme }, true)}<strong>${count}</strong></div>
+                        </div>
+                        <div class="category-info"><strong>${escapeHtml(name)}</strong><span>${count} sản phẩm</span></div>
+                    </article>`;
+                }).join("")}
+            </div>` : `<p class="empty-state">Chưa có danh mục sản phẩm.</p>`}
+        `;
+        refreshIcons();
     }
 
     function renderLayout() {
@@ -135,9 +184,9 @@
 
         nodes.products.innerHTML = `
             <div class="tabs" id="productTabs">
-                <button class="tab active" data-filter="new" type="button">${icon("sparkles", 18)}Sản phẩm mới</button>
-                <button class="tab" data-filter="featured" type="button">${icon("flame", 18)}Sản phẩm nổi bật</button>
-                <button class="tab" data-filter="best" type="button">${icon("badge-check", 18)}Sản phẩm bán chạy</button>
+                <button class="tab active" data-filter="all" type="button">${icon("layout-grid", 18)}Tất cả sản phẩm</button>
+                <button class="tab" data-filter="in-stock" type="button">${icon("package-check", 18)}Còn hàng</button>
+                <button class="tab" data-filter="out-of-stock" type="button">${icon("package-x", 18)}Hết hàng</button>
             </div>
             <div class="status-line" id="dataStatus"></div>
             <div class="product-grid" id="productGrid"></div>
@@ -161,7 +210,9 @@
 
     function filteredProducts(flag = state.filter, query = state.query) {
         return state.products.filter((product) => {
-            const matchesFlag = !flag || product.flags?.includes(flag);
+            const matchesFlag = flag === "all"
+                || (flag === "in-stock" && product.stock > 0)
+                || (flag === "out-of-stock" && product.stock <= 0);
             const text = `${product.name} ${product.category?.name || ""}`.toLowerCase();
             const matchesQuery = !query || text.includes(query.toLowerCase());
             return matchesFlag && matchesQuery;
@@ -178,21 +229,22 @@
     }
 
     function renderDeal() {
-        const dealProducts = window.demoProducts.filter((product) => product.discount).slice(0, 4);
+        const dealProducts = state.products.filter((product) => product.stock > 0).slice(0, 4);
         nodes.deals.innerHTML = `
             <div class="deal-copy">
-                <span>Deal nổi bật</span>
-                <h2>Cam kết giá tốt nhất thị trường</h2>
-                <p>Sản phẩm chính hãng, ưu đãi rõ ràng, hỗ trợ đổi trả nhanh khi có lỗi từ nhà sản xuất.</p>
+                <span>Sản phẩm đang có hàng</span>
+                <h2>Chọn thiết bị phù hợp với bạn</h2>
+                <p>Danh sách sản phẩm được cập nhật từ cửa hàng.</p>
             </div>
-            <div class="deal-grid">${dealProducts.map((product) => productCard(product, true)).join("")}</div>
+            <div class="deal-grid">${dealProducts.length ? dealProducts.map((product) => productCard(product, true)).join("") : `<p class="empty-state">Hiện chưa có sản phẩm.</p>`}</div>
         `;
+        refreshIcons();
     }
 
     function renderCategorySections() {
-        const groups = ["iPhone", "iPad", "Watch", "Mac", "AirPods"];
+        const groups = [...new Set(state.products.map((product) => product.category?.name).filter(Boolean))];
         nodes.categorySections.innerHTML = groups.map((name) => {
-            const products = window.demoProducts.filter((product) => product.category?.name === name).slice(0, 5);
+            const products = state.products.filter((product) => product.category?.name === name).slice(0, 5);
             if (!products.length) return "";
             return `
                 <section class="shell panel category-product-section">
@@ -213,12 +265,12 @@
             </section>
             <section class="panel review-section" id="reviews">
                 <div class="section-title"><span></span><h2>Review</h2></div>
-                <div class="video-box">${icon("play", 34)}<strong>Video trải nghiệm sản phẩm mới</strong><span>Không dùng tài sản từ website tham chiếu.</span></div>
+                <div class="video-box">${icon("play", 34)}<strong>Đánh giá và hướng dẫn sản phẩm</strong><span>Nội dung đánh giá sẽ được cập nhật.</span></div>
             </section>
             <section class="panel feedback-section">
-                <div class="section-title"><span></span><h2>Khách hàng nói gì</h2></div>
-                <blockquote>“Giao diện demo rõ ràng, dễ tìm sản phẩm và giỏ hàng hoạt động mượt cho phần prototype.”</blockquote>
-                <strong>Minh Anh</strong><span>Khách hàng thân thiết</span>
+                <div class="section-title"><span></span><h2>Hỗ trợ khách hàng</h2></div>
+                <blockquote>Đội ngũ E-Market hỗ trợ bạn tìm thiết bị phù hợp với nhu cầu và ngân sách.</blockquote>
+                <strong>Tư vấn E-Market</strong><span>Hỗ trợ sản phẩm</span>
             </section>
         `;
 
@@ -231,7 +283,7 @@
     function renderFooter() {
         nodes.footer.innerHTML = `
             <div class="shell footer-grid">
-                <div><strong>E-Market Phone</strong><p>Website demo thương mại điện tử bán điện thoại và thiết bị công nghệ.</p></div>
+                <div><strong>E-Market Phone</strong><p>Cửa hàng điện thoại và thiết bị công nghệ.</p></div>
                 <div><strong>Hỗ trợ</strong><a href="#warranty">Tra cứu bảo hành</a><a href="#faq">Câu hỏi thường gặp</a><a href="#contact">Liên hệ</a></div>
                 <div><strong>Danh mục</strong><a href="#products">iPhone</a><a href="#products">iPad</a><a href="#products">Mac</a><a href="#products">Phụ kiện</a></div>
                 <div><strong>Hotline</strong><p>1900 6750<br>support@emarket.demo</p></div>
@@ -263,57 +315,159 @@
                         <span>Tình trạng: <strong>${product.stock > 0 ? "Còn hàng" : "Hết hàng"}</strong></span>
                     </div>
                     <div class="detail-price"><span>${formatMoney(product.price)}</span>${product.oldPrice ? `<small>${formatMoney(product.oldPrice)}</small>` : ""}</div>
-                    <p class="warranty">${escapeHtml(product.warranty)}</p>
+                    ${product.warranty ? `<p class="warranty">${escapeHtml(product.warranty)}</p>` : ""}
                     <div class="quantity-control">
                         <button type="button" data-qty="-1">-</button><input id="detailQuantity" value="1" readonly><button type="button" data-qty="1">+</button>
                     </div>
                     <div class="buy-actions">
                         <button class="add-cart-wide" type="button" data-add="${product.id}" ${product.stock <= 0 ? "disabled" : ""}>Thêm vào giỏ</button>
-                        <button class="primary-button" type="button">Mua ngay</button>
+                        <button class="primary-button" type="button" data-buy-now="${product.id}" ${product.stock <= 0 ? "disabled" : ""}>Mua ngay</button>
                     </div>
                 </div>
-                <aside class="detail-sidebar">${window.demoStores.map((store) => `<div><strong>${store.name}</strong><span>${store.address}</span></div>`).join("")}</aside>
+                <aside class="detail-sidebar">
+                    <div><strong>Thông tin tồn kho</strong><span>Số lượng sản phẩm được cập nhật từ cửa hàng.</span></div>
+                    <div><strong>Đặt hàng</strong><span>Nhập thông tin người nhận ở bước xác nhận đơn hàng.</span></div>
+                    <div><strong>Hỗ trợ</strong><span>Thông tin đơn hàng sẽ hiển thị trong tài khoản sau khi đăng nhập.</span></div>
+                </aside>
             </div>
         `;
         refreshIcons();
         nodes.productDetail.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
+    function cartTotal() {
+        return state.cart.reduce((sum, item) => sum + (Number(item.product.price) || 0) * item.quantity, 0);
+    }
+
+    function persistGuestCart() {
+        const items = state.cart.filter((item) => item.local).map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity
+        }));
+        localStorage.setItem(guestCartKey, JSON.stringify(items));
+    }
+
+    function restoreGuestCart() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(guestCartKey) || "[]");
+            state.cart = saved.flatMap((savedItem) => {
+                const product = state.products.find((item) => item.id === Number(savedItem.productId));
+                const quantity = Number(savedItem.quantity);
+                if (!product || !Number.isInteger(quantity) || quantity < 1) return [];
+                return [{ id: `local-${product.id}`, product, quantity, local: true }];
+            });
+        } catch (error) {
+            state.cart = [];
+            localStorage.removeItem(guestCartKey);
+        }
+        renderCart();
+    }
+
     function renderCart() {
         const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
-        const total = state.cart.reduce((sum, item) => sum + (item.product.price || 0) * item.quantity, 0);
+        const total = cartTotal();
         nodes.cartCount.textContent = String(totalItems);
+        nodes.cartButton.setAttribute("aria-label", `Giỏ hàng, ${totalItems} sản phẩm`);
         nodes.cartTitle.textContent = `${totalItems} sản phẩm`;
         nodes.cartTotal.textContent = formatMoney(total);
+        nodes.checkoutTotal.textContent = formatMoney(total);
+        nodes.checkoutButton.disabled = state.cart.length === 0;
         nodes.cartItems.innerHTML = state.cart.length
-            ? state.cart.map((item) => `<div class="cart-item">${productVisual(item.product, true)}<div><strong>${escapeHtml(item.product.name)}</strong><span>${formatMoney(item.product.price)}</span><p>Số lượng: ${item.quantity}</p></div></div>`).join("")
-            : `<p>Giỏ hàng đang trống.</p>`;
+            ? state.cart.map((item) => `
+                <article class="cart-item">
+                    ${productVisual(item.product, true)}
+                    <div class="cart-item-info">
+                        <strong>${escapeHtml(item.product.name)}</strong>
+                        <span>${formatMoney(item.product.price)}</span>
+                        <div class="cart-item-actions">
+                            <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="-1" aria-label="Giảm số lượng" ${item.quantity <= 1 ? "disabled" : ""}>−</button>
+                            <output>${item.quantity}</output>
+                            <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="1" aria-label="Tăng số lượng" ${item.quantity >= item.product.stock ? "disabled" : ""}>+</button>
+                            <button class="cart-remove" type="button" data-cart-remove="${escapeHtml(item.id)}">Xóa</button>
+                        </div>
+                    </div>
+                </article>
+            `).join("")
+            : `<p class="empty-state">Giỏ hàng đang trống. Hãy chọn sản phẩm để tiếp tục.</p>`;
     }
 
     function addLocalCart(productId, quantity = 1) {
         const product = state.products.find((item) => item.id === Number(productId));
-        if (!product || product.stock <= 0) return;
+        if (!product || product.stock <= 0) return false;
         const existing = state.cart.find((item) => item.product.id === product.id);
+        if ((existing?.quantity || 0) + quantity > product.stock) {
+            showToast(`Chỉ còn ${product.stock} sản phẩm trong kho.`);
+            return false;
+        }
         if (existing) existing.quantity += quantity;
-        else state.cart.push({ product, quantity });
+        else state.cart.push({ id: `local-${product.id}`, product, quantity, local: true });
+        persistGuestCart();
         renderCart();
+        return true;
     }
 
-    async function addToCart(productId) {
+    async function addToCart(productId, openDrawer = true) {
         const quantity = state.selectedProduct?.id === Number(productId) ? state.quantity : 1;
         if (window.emarketApi.getToken()) {
             try {
-                await window.emarketApi.addToCart(Number(productId), quantity);
+                state.cart = (await window.emarketApi.addToCart(Number(productId), quantity)).items;
+                renderCart();
                 showToast("Đã gửi sản phẩm vào giỏ hàng backend.");
             } catch (error) {
-                showToast(`Backend giỏ hàng chưa sẵn sàng, dùng giỏ demo. ${error.message}`);
+                showToast(`Không thể cập nhật giỏ hàng: ${error.message}`);
+                return false;
             }
+        } else if (!addLocalCart(productId, quantity)) {
+            return false;
         }
-        addLocalCart(productId, quantity);
-        openCart();
+        if (openDrawer) await openCart();
+        return true;
     }
 
-    function openCart() {
+    async function changeCartQuantity(itemId, delta) {
+        const item = state.cart.find((candidate) => candidate.id === String(itemId));
+        if (!item) return;
+        const quantity = item.quantity + Number(delta);
+        if (quantity < 1) return;
+        if (quantity > item.product.stock) {
+            showToast(`Chỉ còn ${item.product.stock} sản phẩm trong kho.`);
+            return;
+        }
+        if (item.local) {
+            item.quantity = quantity;
+            persistGuestCart();
+            renderCart();
+            return;
+        }
+        try {
+            state.cart = (await window.emarketApi.updateCartItem(item.id, quantity)).items;
+            renderCart();
+        } catch (error) {
+            showToast(`Không thể cập nhật số lượng: ${error.message}`);
+        }
+    }
+
+    async function removeCartItem(itemId) {
+        const item = state.cart.find((candidate) => candidate.id === String(itemId));
+        if (!item) return;
+        if (item.local) {
+            state.cart = state.cart.filter((candidate) => candidate.id !== item.id);
+            persistGuestCart();
+            renderCart();
+            return;
+        }
+        try {
+            state.cart = (await window.emarketApi.removeCartItem(item.id)).items;
+            renderCart();
+        } catch (error) {
+            showToast(`Không thể xóa sản phẩm: ${error.message}`);
+        }
+    }
+
+    async function openCart() {
+        if (window.emarketApi.getToken()) {
+            await loadAccountCart();
+        }
         nodes.cartDrawer.classList.add("open");
         nodes.cartDrawer.setAttribute("aria-hidden", "false");
         nodes.cartBackdrop.classList.remove("hidden");
@@ -323,6 +477,137 @@
         nodes.cartDrawer.classList.remove("open");
         nodes.cartDrawer.setAttribute("aria-hidden", "true");
         nodes.cartBackdrop.classList.add("hidden");
+    }
+
+    async function showCheckout() {
+        if (window.emarketApi.getToken()) {
+            await loadAccountCart();
+            if (state.cart.some((item) => item.local)) {
+                showToast("Một số mặt hàng chưa đồng bộ với giỏ tài khoản. Hãy thử lại sau khi kiểm tra tồn kho.");
+                return;
+            }
+        }
+        if (!state.cart.length) {
+            showToast("Giỏ hàng đang trống.");
+            return;
+        }
+        closeCart();
+        nodes.checkoutTotal.textContent = formatMoney(cartTotal());
+        nodes.checkoutModal.classList.remove("hidden");
+        nodes.checkoutBackdrop.classList.remove("hidden");
+        nodes.checkoutModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCheckout() {
+        nodes.checkoutModal.classList.add("hidden");
+        nodes.checkoutBackdrop.classList.add("hidden");
+        nodes.checkoutModal.setAttribute("aria-hidden", "true");
+    }
+
+    async function handleCheckoutSubmit(event) {
+        event.preventDefault();
+        if (!state.cart.length || state.submittingOrder) return;
+        state.submittingOrder = true;
+        nodes.placeOrderButton.disabled = true;
+        nodes.placeOrderButton.textContent = "Đang tạo đơn hàng…";
+        const form = Object.fromEntries(new FormData(nodes.checkoutForm).entries());
+        const payload = {
+            customerName: form.customerName.trim(),
+            phone: form.phone.trim(),
+            address: form.address.trim(),
+            items: state.cart.map((item) => ({ productId: item.product.id, quantity: item.quantity }))
+        };
+
+        try {
+            const order = await window.emarketApi.createOrder(payload);
+            state.cart = [];
+            persistGuestCart();
+            renderCart();
+            nodes.checkoutForm.reset();
+            closeCheckout();
+            closeCart();
+            showToast(`Đặt hàng thành công. Mã đơn hàng: #${order.id}.`);
+        } catch (error) {
+            showToast(`Chưa thể tạo đơn hàng: ${error.message}`);
+        } finally {
+            state.submittingOrder = false;
+            nodes.placeOrderButton.disabled = false;
+            nodes.placeOrderButton.textContent = "Xác nhận đặt hàng";
+        }
+    }
+
+    function closeOrders() {
+        nodes.ordersModal.classList.add("hidden");
+        nodes.ordersBackdrop.classList.add("hidden");
+        nodes.ordersModal.setAttribute("aria-hidden", "true");
+    }
+
+    function orderDate(value) {
+        if (!value) return "Ngày đặt chưa có";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "Ngày đặt chưa có" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+
+    function orderStatusLabel(status) {
+        const labels = {
+            PENDING: "Chờ xác nhận",
+            CONFIRMED: "Đã xác nhận",
+            PROCESSING: "Đang xử lý",
+            SHIPPING: "Đang giao",
+            SHIPPED: "Đang giao",
+            DELIVERED: "Đã giao",
+            CANCELLED: "Đã hủy",
+            CANCELED: "Đã hủy"
+        };
+        const value = String(status || "PENDING").toUpperCase();
+        return labels[value] || status || "Đang xử lý";
+    }
+
+    async function showMyOrders() {
+        if (!window.emarketApi.getToken()) {
+            showToast("Đăng nhập để xem các đơn hàng của bạn.");
+            openAuth("login");
+            return;
+        }
+        nodes.orderList.innerHTML = `<p class="empty-state">Đang tải đơn hàng…</p>`;
+        nodes.ordersModal.classList.remove("hidden");
+        nodes.ordersBackdrop.classList.remove("hidden");
+        nodes.ordersModal.setAttribute("aria-hidden", "false");
+        try {
+            const orders = await window.emarketApi.getMyOrders();
+            nodes.orderList.innerHTML = orders.length ? orders.map((order) => `
+                <article class="order-card">
+                    <div class="order-card-head"><strong>Đơn #${escapeHtml(order.id)}</strong><span>${escapeHtml(orderStatusLabel(order.status))}</span></div>
+                    <small>${escapeHtml(orderDate(order.createdAt))}</small>
+                    <p>${(order.items || []).map((item) => `${escapeHtml(item.product?.name || "Sản phẩm")} × ${Number(item.quantity) || 0}`).join("<br>")}</p>
+                    <div class="order-card-total"><span>Tổng đơn</span><strong>${formatMoney(order.totalAmount)}</strong></div>
+                </article>
+            `).join("") : `<p class="empty-state">Bạn chưa có đơn hàng nào.</p>`;
+        } catch (error) {
+            nodes.orderList.innerHTML = `<p class="empty-state">Không thể tải đơn hàng: ${escapeHtml(error.message)}</p>`;
+        }
+    }
+
+    async function loadAccountCart() {
+        try {
+            state.cart = (await window.emarketApi.getCart()).items;
+            const guestItems = JSON.parse(localStorage.getItem(guestCartKey) || "[]");
+            const pending = [];
+            for (const item of guestItems) {
+                try {
+                    state.cart = (await window.emarketApi.addToCart(Number(item.productId), Number(item.quantity))).items;
+                } catch (error) {
+                    const product = state.products.find((candidate) => candidate.id === Number(item.productId));
+                    if (product) pending.push({ id: `local-${product.id}`, product, quantity: Number(item.quantity), local: true });
+                }
+            }
+            state.cart.push(...pending);
+            persistGuestCart();
+            if (pending.length) showToast("Một số sản phẩm trong giỏ khách chưa đồng bộ được. Hãy kiểm tra tồn kho.");
+        } catch (error) {
+            showToast(`Không thể tải giỏ hàng tài khoản: ${error.message}`);
+        }
+        renderCart();
     }
 
     function openAuth(tab = "login") {
@@ -345,7 +630,12 @@
     }
 
     function updateAccountState() {
-        nodes.accountLabel.textContent = window.emarketApi.getToken() ? "Đã đăng nhập" : "Thông tin";
+        const signedIn = Boolean(window.emarketApi.getToken());
+        nodes.accountLabel.textContent = signedIn ? "Tài khoản" : "Thông tin";
+        nodes.accountButton.setAttribute("aria-label", signedIn ? "Tài khoản đã đăng nhập" : "Đăng nhập hoặc đăng ký");
+        document.querySelectorAll("[data-auth-open]").forEach((button) => button.classList.toggle("hidden", signedIn));
+        nodes.myOrdersButton.classList.toggle("hidden", !signedIn);
+        nodes.logoutButton.classList.toggle("hidden", !signedIn);
     }
 
     async function handleAuthSubmit(event, type) {
@@ -361,8 +651,9 @@
             }
             updateAccountState();
             closeAuth();
+            await loadAccountCart();
         } catch (error) {
-            showToast(`Không kết nối được auth backend: ${error.message}`);
+            showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`);
         }
     }
 
@@ -382,6 +673,7 @@
             const search = event.target.closest("[data-menu-search]");
             const category = event.target.closest("[data-category]");
             const authOpen = event.target.closest("[data-auth-open]");
+            const buyNow = event.target.closest("[data-buy-now]");
 
             if (filter) {
                 state.filter = filter.dataset.filter;
@@ -393,11 +685,14 @@
                 if (product) renderDetail(product);
             }
             if (add) addToCart(add.dataset.add);
-            if (search) runSearch(search.dataset.menuSearch);
-            if (category) {
-                const found = window.demoCategories.find((item) => item.id === category.dataset.category);
-                if (found) runSearch(found.name);
+            if (buyNow) {
+                void (async () => {
+                    const added = await addToCart(buyNow.dataset.buyNow, false);
+                    if (added) showCheckout();
+                })();
             }
+            if (search) runSearch(search.dataset.menuSearch);
+            if (category) runSearch(category.dataset.category);
             if (authOpen) openAuth(authOpen.dataset.authOpen);
         });
 
@@ -408,9 +703,16 @@
                 $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
             }
             if (qty) {
-                state.quantity = Math.max(1, state.quantity + Number(qty.dataset.qty));
+                state.quantity = Math.min(state.selectedProduct.stock, Math.max(1, state.quantity + Number(qty.dataset.qty)));
                 $("#detailQuantity").value = state.quantity;
             }
+        });
+
+        nodes.cartItems.addEventListener("click", (event) => {
+            const change = event.target.closest("[data-cart-change]");
+            const remove = event.target.closest("[data-cart-remove]");
+            if (change) changeCartQuantity(change.dataset.cartChange, change.dataset.delta);
+            if (remove) removeCartItem(remove.dataset.cartRemove);
         });
 
         nodes.searchForm.addEventListener("submit", (event) => {
@@ -420,18 +722,35 @@
         nodes.cartButton.addEventListener("click", openCart);
         nodes.closeCart.addEventListener("click", closeCart);
         nodes.cartBackdrop.addEventListener("click", closeCart);
-        nodes.accountButton.addEventListener("click", () => openAuth("login"));
+        nodes.checkoutButton.addEventListener("click", showCheckout);
+        nodes.closeCheckout.addEventListener("click", closeCheckout);
+        nodes.checkoutBackdrop.addEventListener("click", closeCheckout);
+        nodes.checkoutForm.addEventListener("submit", handleCheckoutSubmit);
+        nodes.accountButton.addEventListener("click", () => {
+            if (window.emarketApi.getToken()) showMyOrders();
+            else openAuth("login");
+        });
         nodes.heroLoginButton.addEventListener("click", () => openAuth("login"));
         nodes.closeAuth.addEventListener("click", closeAuth);
         nodes.authBackdrop.addEventListener("click", closeAuth);
         document.querySelectorAll("[data-auth-tab]").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
         nodes.loginForm.addEventListener("submit", (event) => handleAuthSubmit(event, "login"));
         nodes.registerForm.addEventListener("submit", (event) => handleAuthSubmit(event, "register"));
+        nodes.myOrdersButton.addEventListener("click", showMyOrders);
+        nodes.logoutButton.addEventListener("click", () => {
+            window.emarketApi.clearToken();
+            state.cart = [];
+            restoreGuestCart();
+            updateAccountState();
+            showToast("Bạn đã đăng xuất.");
+        });
+        nodes.closeOrders.addEventListener("click", closeOrders);
+        nodes.ordersBackdrop.addEventListener("click", closeOrders);
         nodes.catalogToggle.addEventListener("click", () => nodes.catalogPanel.classList.add("open"));
         nodes.closeCatalog.addEventListener("click", () => nodes.catalogPanel.classList.remove("open"));
         nodes.scrollTopButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         nodes.storeButton.addEventListener("click", () => showToast("Hệ thống cửa hàng: Sài Gòn, Bình Dương và Cần Thơ."));
-        nodes.orderLookupButton.addEventListener("click", () => showToast("Tra cứu đơn hàng sẽ yêu cầu mã đơn và số điện thoại."));
+        nodes.orderLookupButton.addEventListener("click", showMyOrders);
         nodes.notifyButton.addEventListener("click", () => showToast("Bạn đang không có thông báo mới."));
         nodes.contactButton.addEventListener("click", () => window.location.assign("tel:19006750"));
     }
@@ -445,15 +764,20 @@
             state.products = window.demoProducts;
             status.textContent = "Backend chưa sẵn sàng hoặc chưa có dữ liệu, đang hiển thị dữ liệu demo.";
         }
+        renderCategories();
         renderProducts();
+        renderDeal();
+        renderCategorySections();
     }
 
-    function init() {
+    async function init() {
         renderLayout();
         bindEvents();
         renderCart();
         updateAccountState();
-        loadProducts();
+        await loadProducts();
+        restoreGuestCart();
+        if (window.emarketApi.getToken()) await loadAccountCart();
     }
 
     init();

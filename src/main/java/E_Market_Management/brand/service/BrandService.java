@@ -63,4 +63,11 @@ public class BrandService {
 
         return brandMapper.toResponse(brand);
     }
+
+    public void deleteBrand(Long brandId) {
+        Brand brand = brandRepository.findById(brandId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thương hiệu"));
+        
+        brandRepository.delete(brand);
+    }
 }

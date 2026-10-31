@@ -12,6 +12,7 @@ public class BrandMapper {
         return BrandResponse.builder()
             .name(brand.getName())
             .country(brand.getCountry())
+            .logo(brand.getLogo())
             .build();
     }
 }

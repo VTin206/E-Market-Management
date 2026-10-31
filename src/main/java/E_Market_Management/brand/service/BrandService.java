@@ -61,7 +61,7 @@ public class BrandService {
         brand.setCountry(request.getCountry());
         brand.setLogo(request.getLogo());
 
-        return brandMapper.toResponse(brand);
+        return brandMapper.toResponse(brandRepository.save(brand));
     }
 
     public void deleteBrand(Long brandId) {

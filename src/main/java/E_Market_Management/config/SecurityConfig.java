@@ -48,6 +48,10 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
+                    "/api/brand/**"
+                ).permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
                     "/api/orders"
                 ).hasRole("ADMIN")
                 .requestMatchers(
@@ -73,6 +77,18 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/category/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.PUT,
+                    "/api/brand/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.DELETE,
+                    "/api/brand/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/brand/**"
                 ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

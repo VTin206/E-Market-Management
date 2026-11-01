@@ -31,6 +31,7 @@ public class BrandService {
         Brand brand = Brand.builder()
             .name(request.getName())
             .country(request.getCountry())
+            .logo(request.getLogo())
             .build();
 
         return brandMapper.toResponse(brandRepository.save(brand));

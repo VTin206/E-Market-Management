@@ -53,7 +53,7 @@ public class BrandController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BrandResponse> updateBrand(@PathVariable("id") Long brandId, @RequestBody BrandRequest request) {
+    public ResponseEntity<BrandResponse> updateBrand(@PathVariable("id") Long brandId, @RequestBody @Valid BrandRequest request) {
         return ResponseEntity.ok(
             brandService.updateBrand(brandId, request)
         );

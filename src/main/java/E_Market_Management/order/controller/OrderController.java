@@ -58,9 +58,12 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getCurrentOrder(@PathVariable("id") Long orderId) {
+    public ResponseEntity<OrderResponse> getCurrentOrder(
+        @PathVariable("id") Long orderId,
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
         return ResponseEntity.ok(
-            orderService.getCurrentOrder(orderId)
+            orderService.getCurrentOrder(orderId, userDetails)
         );
     }
 

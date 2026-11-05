@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.order.dto.OrderResponse;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
@@ -24,6 +25,7 @@ import E_Market_Management.order.mapper.OrderMapper;
 import E_Market_Management.order.repository.OrderItemRepository;
 import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
+import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +52,13 @@ public class OrderServiceTest {
                 .build()
         );
         
+        User customer = User.builder()
+            .id(7L)
+            .userName("tester")
+            .password("hash")
+            .role(ROLE.CUSTOMER)
+            .build();
+        CustomUserDetails userDetails = new CustomUserDetails(customer);
 
         Order order = Order.builder()
             .id(1L)
@@ -59,6 +68,7 @@ public class OrderServiceTest {
             .totalAmount(new BigDecimal("200000"))
             .status("PENDING")
             .createdAt(LocalDateTime.of(2026, 10, 24, 10, 0))
+            .user(customer)
             .orderItems(orderItems)
             .build();
 
@@ -78,10 +88,10 @@ public class OrderServiceTest {
         when(orderMapper.toResponse(order, orderItems))
             .thenReturn(expectedResponse);
 
-        OrderResponse actualResponse = orderService.getCurrentOrder(1L);
+        OrderResponse actualResponse = orderService.getCurrentOrder(1L, userDetails);
 
         assertEquals(expectedResponse.getId(), 1L);
-        assertEquals(expectedResponse.getCustomerName(), expectedResponse.getCustomerName());
+        assertEquals(expectedResponse.getCustomerName(), actualResponse.getCustomerName());
         assertSame(expectedResponse, actualResponse);
         assertEquals(expectedResponse.getStatus(), actualResponse.getStatus());
         assertEquals(expectedResponse.getTotalAmount(), actualResponse.getTotalAmount());
@@ -94,7 +104,15 @@ public class OrderServiceTest {
     public void getCurrentOrder_whenOrderNotExist_throwResourceNotFoundException() {
         when(orderRepository.findById(1L))
             .thenReturn(Optional.empty());
+
+        User customer = User.builder()
+            .id(7L)
+            .userName("tester")
+            .password("hash")
+            .role(ROLE.CUSTOMER)
+            .build();
+        CustomUserDetails userDetails = new CustomUserDetails(customer);
         
-        assertThrows(ResourceNotFoundException.class, () -> orderService.getCurrentOrder(1L) );
+        assertThrows(ResourceNotFoundException.class, () -> orderService.getCurrentOrder(1L, userDetails));
     }
 }

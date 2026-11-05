@@ -7,10 +7,14 @@ import E_Market_Management.order.repository.OrderItemRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
+import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.cart.entity.Cart;
 import E_Market_Management.cart.entity.CartItem;
 import E_Market_Management.order.dto.CheckOutLine;
@@ -27,7 +31,6 @@ import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
 
 @Service
 public class OrderService {
@@ -185,10 +188,24 @@ public class OrderService {
     }
 
     @Transactional 
-    public OrderResponse getCurrentOrder(Long orderId) {
+    public OrderResponse getCurrentOrder(Long orderId, CustomUserDetails userDetails) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
         
+        Long userId = userDetails.getId();
+        Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
+
+        boolean isAdmin = authorities.stream()
+            .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = order.getUser() != null && userId.equals(order.getUser().getId());
+
+        if(!isAdmin && !isOwner) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Bạn không có quyền xem đơn hàng này!"
+            );
+        }
+
         return orderMapper.toResponse(order, order.getOrderItems());
     }
 }

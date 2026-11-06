@@ -43,6 +43,10 @@ public class SecurityConfig {
                     "/api/products/**"
                 ).permitAll()
                 .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/reviews"
+                ).permitAll()
+                .requestMatchers(
                     HttpMethod.POST,
                     "/api/orders"
                 ).permitAll()

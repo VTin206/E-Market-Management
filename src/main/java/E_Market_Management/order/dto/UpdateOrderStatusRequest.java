@@ -1,10 +1,11 @@
 package E_Market_Management.order.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import E_Market_Management.order.entity.STATUS;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class UpdateOrderStatusRequest {
-    @NotBlank(message = "Trạng thái không được để trống")
-    private String status;
+    @NotNull(message = "Trạng thái không được để trống")
+    private STATUS status;
 }

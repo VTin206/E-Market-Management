@@ -23,10 +23,12 @@ import E_Market_Management.order.dto.OrderResponse;
 import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
+import E_Market_Management.order.entity.STATUS;
 import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.product.entity.Product;
 import E_Market_Management.product.repository.ProductRepository;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
+import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,7 +105,7 @@ public class OrderService {
             .customerName(request.getCustomerName())
             .phone(request.getPhone())
             .address(request.getAddress())
-            .status("PENDING")
+            .status(STATUS.PENDING)
             .createdAt(LocalDateTime.now())
             .totalAmount(BigDecimal.ZERO)
             .build();
@@ -182,7 +184,14 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
         
-        order.setStatus(request.getStatus());
+        STATUS requestedStatus = request.getStatus();
+        if (!order.getStatus().canTransitionTo(requestedStatus)) {
+            throw new ConflictException(
+                "Không thể chuyển trạng thái đơn hàng từ " + order.getStatus() + " sang " + requestedStatus
+            );
+        }
+
+        order.setStatus(requestedStatus);
         orderRepository.save(order);
         return orderMapper.toResponse(order, order.getOrderItems());
     }

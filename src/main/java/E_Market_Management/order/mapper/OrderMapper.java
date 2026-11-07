@@ -38,7 +38,7 @@ public class OrderMapper {
             .phone(order.getPhone())
             .address(order.getAddress())
             .totalAmount(order.getTotalAmount())
-            .status(order.getStatus())
+            .status(order.getStatus().name())
             .createdAt(order.getCreatedAt())
             .items(itemResponses)
             .build();

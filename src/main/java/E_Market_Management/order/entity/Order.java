@@ -32,8 +32,9 @@ public class Order {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    private String status;
+    private STATUS status;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

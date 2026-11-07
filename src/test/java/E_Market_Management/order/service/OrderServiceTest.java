@@ -19,12 +19,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.order.dto.OrderResponse;
+import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
+import E_Market_Management.order.entity.STATUS;
 import E_Market_Management.order.mapper.OrderMapper;
 import E_Market_Management.order.repository.OrderItemRepository;
 import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.shared.exception.ResourceNotFoundException;
+import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
 
@@ -66,7 +69,7 @@ public class OrderServiceTest {
             .phone("0378786152")
             .address("Quận 3, TP HCM")
             .totalAmount(new BigDecimal("200000"))
-            .status("PENDING")
+            .status(STATUS.PENDING)
             .createdAt(LocalDateTime.of(2026, 10, 24, 10, 0))
             .user(customer)
             .orderItems(orderItems)
@@ -114,5 +117,35 @@ public class OrderServiceTest {
         CustomUserDetails userDetails = new CustomUserDetails(customer);
         
         assertThrows(ResourceNotFoundException.class, () -> orderService.getCurrentOrder(1L, userDetails));
+    }
+
+    @Test
+    public void updateStatus_whenTransitionIsAllowed_updatesStatus() {
+        List<OrderItem> items = List.of();
+        Order order = Order.builder().id(5L).status(STATUS.PENDING).orderItems(items).build();
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(STATUS.PROCESSING);
+        OrderResponse expected = OrderResponse.builder().id(5L).status("PROCESSING").build();
+
+        when(orderRepository.findById(5L)).thenReturn(Optional.of(order));
+        when(orderRepository.save(order)).thenReturn(order);
+        when(orderMapper.toResponse(order, items)).thenReturn(expected);
+
+        OrderResponse actual = orderService.updateStatus(request, 5L);
+
+        assertSame(expected, actual);
+        assertEquals(STATUS.PROCESSING, order.getStatus());
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    public void updateStatus_whenTransitionIsNotAllowed_throwsConflict() {
+        Order order = Order.builder().id(5L).status(STATUS.PENDING).orderItems(List.of()).build();
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(STATUS.COMPLETED);
+        when(orderRepository.findById(5L)).thenReturn(Optional.of(order));
+
+        assertThrows(ConflictException.class, () -> orderService.updateStatus(request, 5L));
+        assertEquals(STATUS.PENDING, order.getStatus());
     }
 }

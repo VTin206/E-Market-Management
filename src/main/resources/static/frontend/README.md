@@ -13,6 +13,13 @@ Frontend nằm trong `src/main/resources/static/frontend` và chỉ gồm HTML, 
 
 ## API backend đang dùng
 
+## Đánh giá sản phẩm
+
+- `GET /api/reviews?productId={productId}`: đọc đánh giá công khai trên trang chi tiết sản phẩm.
+- `GET /api/reviews/{reviewId}`: đọc một đánh giá công khai.
+- `POST /api/reviews/product/{productId}`: khách hàng/thành viên đã đăng nhập gửi đánh giá (`rating` từ 1 đến 5, `comment` tùy chọn).
+- `PUT /api/reviews/{reviewId}` và `DELETE /api/reviews/{reviewId}`: chủ đánh giá hoặc admin.
+
 - `GET /api/products`
 - `POST /api/auth/login`
 - `POST /api/auth/register`

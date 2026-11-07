@@ -6,6 +6,8 @@
         filter: "all",
         query: "",
         selectedProduct: null,
+        reviewItems: [],
+        editingReviewId: null,
         quantity: 1,
         submittingOrder: false
     };
@@ -265,7 +267,7 @@
             </section>
             <section class="panel review-section" id="reviews">
                 <div class="section-title"><span></span><h2>Review</h2></div>
-                <div class="video-box">${icon("play", 34)}<strong>Đánh giá và hướng dẫn sản phẩm</strong><span>Nội dung đánh giá sẽ được cập nhật.</span></div>
+                <div class="video-box"><strong>Xem đánh giá của từng sản phẩm</strong><span>Mở trang chi tiết sản phẩm để đọc và gửi đánh giá.</span></div>
             </section>
             <section class="panel feedback-section">
                 <div class="section-title"><span></span><h2>Hỗ trợ khách hàng</h2></div>
@@ -330,9 +332,114 @@
                     <div><strong>Hỗ trợ</strong><span>Thông tin đơn hàng sẽ hiển thị trong tài khoản sau khi đăng nhập.</span></div>
                 </aside>
             </div>
+            <section class="product-reviews" aria-labelledby="productReviewsTitle">
+                <div class="section-title"><span></span><h2 id="productReviewsTitle">Đánh giá sản phẩm</h2></div>
+                <div id="reviewFormContainer"></div>
+                <div class="review-list" id="reviewList" aria-live="polite"><p class="empty-state">Đang tải đánh giá…</p></div>
+            </section>
         `;
         refreshIcons();
+        state.reviewItems = [];
+        state.editingReviewId = null;
+        renderReviewForm();
+        void loadProductReviews(product.id);
         nodes.productDetail.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderReviewForm() {
+        const container = $("#reviewFormContainer");
+        if (!container || !state.selectedProduct) return;
+        if (!window.emarketApi.getToken()) {
+            container.innerHTML = `<p class="review-login-prompt">Đăng nhập để gửi đánh giá. <button class="primary-button review-login-button" type="button" data-auth-open="login">Đăng nhập</button></p>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <form class="review-form" id="createReviewForm">
+                <label>Điểm đánh giá
+                    <select name="rating" required>
+                        <option value="5">5 sao</option><option value="4">4 sao</option>
+                        <option value="3">3 sao</option><option value="2">2 sao</option><option value="1">1 sao</option>
+                    </select>
+                </label>
+                <label>Nhận xét<textarea name="comment" rows="3" maxlength="2000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea></label>
+                <button class="primary-button" type="submit">Gửi đánh giá</button>
+            </form>
+        `;
+    }
+
+    function renderReviewList() {
+        const list = $("#reviewList");
+        if (!list) return;
+        if (!state.reviewItems.length) {
+            list.innerHTML = `<p class="empty-state">Sản phẩm chưa có đánh giá nào.</p>`;
+            return;
+        }
+
+        const currentUser = window.emarketApi.getUserName();
+        list.innerHTML = state.reviewItems.map((review) => {
+            const isOwner = currentUser && currentUser === review.username;
+            if (state.editingReviewId === review.id && isOwner) {
+                return `
+                    <article class="review-card">
+                        <form class="review-edit-form" data-review-edit-form="${review.id}">
+                            <label>Điểm đánh giá
+                                <select name="rating" required>
+                                    ${[5, 4, 3, 2, 1].map((rating) => `<option value="${rating}" ${Number(review.rating) === rating ? "selected" : ""}>${rating} sao</option>`).join("")}
+                                </select>
+                            </label>
+                            <label>Nhận xét<textarea name="comment" rows="3" maxlength="2000">${escapeHtml(review.comment || "")}</textarea></label>
+                            <div class="review-actions"><button class="primary-button" type="submit">Lưu</button><button class="ghost-button" type="button" data-cancel-review-edit>Hủy</button></div>
+                        </form>
+                    </article>
+                `;
+            }
+
+            const date = review.createdAt ? new Date(review.createdAt).toLocaleDateString("vi-VN") : "";
+            return `
+                <article class="review-card">
+                    <div class="review-card-head"><strong>${escapeHtml(review.username || "Khách hàng")}</strong><span class="review-rating" aria-label="${Number(review.rating) || 0} trên 5 sao">${"★".repeat(Math.max(0, Math.min(5, Number(review.rating) || 0)))}${"☆".repeat(5 - Math.max(0, Math.min(5, Number(review.rating) || 0)))}</span></div>
+                    ${date ? `<time>${escapeHtml(date)}</time>` : ""}
+                    <p>${review.comment ? escapeHtml(review.comment) : "Không có nhận xét."}</p>
+                    ${isOwner ? `<div class="review-actions"><button class="ghost-button" type="button" data-edit-review="${review.id}">Sửa</button><button class="ghost-button danger-text" type="button" data-delete-review="${review.id}">Xóa</button></div>` : ""}
+                </article>
+            `;
+        }).join("");
+    }
+
+    async function loadProductReviews(productId) {
+        const list = $("#reviewList");
+        if (!list) return;
+        list.innerHTML = `<p class="empty-state">Đang tải đánh giá…</p>`;
+        try {
+            const reviews = await window.emarketApi.getReviews(productId);
+            if (state.selectedProduct?.id !== Number(productId)) return;
+            state.reviewItems = reviews || [];
+            renderReviewList();
+        } catch (error) {
+            if (state.selectedProduct?.id !== Number(productId)) return;
+            list.innerHTML = `<p class="empty-state">Không thể tải đánh giá: ${escapeHtml(error.message)}</p>`;
+        }
+    }
+
+    async function submitReviewForm(event, reviewId = null) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        const payload = { rating: Number(formData.get("rating")), comment: String(formData.get("comment") || "").trim() };
+        try {
+            if (reviewId == null) {
+                await window.emarketApi.createReview(state.selectedProduct.id, payload);
+                showToast("Đã gửi đánh giá.");
+            } else {
+                await window.emarketApi.updateReview(reviewId, payload);
+                state.editingReviewId = null;
+                showToast("Đã cập nhật đánh giá.");
+            }
+            await loadProductReviews(state.selectedProduct.id);
+        } catch (error) {
+            showToast(`Không thể lưu đánh giá: ${error.message}`);
+        }
     }
 
     function cartTotal() {
@@ -652,6 +759,8 @@
             updateAccountState();
             closeAuth();
             await loadAccountCart();
+            renderReviewForm();
+            renderReviewList();
         } catch (error) {
             showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`);
         }
@@ -698,6 +807,8 @@
 
         nodes.productDetail.addEventListener("click", (event) => {
             const qty = event.target.closest("[data-qty]");
+            const editReview = event.target.closest("[data-edit-review]");
+            const deleteReview = event.target.closest("[data-delete-review]");
             if (event.target.closest("#backToProducts")) {
                 setView("listing");
                 $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -706,6 +817,34 @@
                 state.quantity = Math.min(state.selectedProduct.stock, Math.max(1, state.quantity + Number(qty.dataset.qty)));
                 $("#detailQuantity").value = state.quantity;
             }
+            if (editReview) {
+                state.editingReviewId = Number(editReview.dataset.editReview);
+                renderReviewList();
+            }
+            if (event.target.closest("[data-cancel-review-edit]")) {
+                state.editingReviewId = null;
+                renderReviewList();
+            }
+            if (deleteReview && window.confirm("Bạn có chắc muốn xóa đánh giá này?")) {
+                void (async () => {
+                    try {
+                        await window.emarketApi.deleteReview(deleteReview.dataset.deleteReview);
+                        showToast("Đã xóa đánh giá.");
+                        await loadProductReviews(state.selectedProduct.id);
+                    } catch (error) {
+                        showToast(`Không thể xóa đánh giá: ${error.message}`);
+                    }
+                })();
+            }
+        });
+
+        nodes.productDetail.addEventListener("submit", (event) => {
+            if (event.target.matches("#createReviewForm")) {
+                void submitReviewForm(event);
+                return;
+            }
+            const editForm = event.target.closest("[data-review-edit-form]");
+            if (editForm) void submitReviewForm(event, Number(editForm.dataset.reviewEditForm));
         });
 
         nodes.cartItems.addEventListener("click", (event) => {
@@ -742,6 +881,8 @@
             state.cart = [];
             restoreGuestCart();
             updateAccountState();
+            renderReviewForm();
+            renderReviewList();
             showToast("Bạn đã đăng xuất.");
         });
         nodes.closeOrders.addEventListener("click", closeOrders);

@@ -38,6 +38,7 @@ public class ReviewService {
         this.reviewMapper = reviewMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<ReviewResponse> getReviewsByProduct(Long productId) {
         if(productRepository.findById(productId).isEmpty()) {
             throw new ResourceNotFoundException("Không tìm thấy sản phẩm");
@@ -50,6 +51,7 @@ public class ReviewService {
         return responses;
     }
 
+    @Transactional(readOnly = true)
     public ReviewResponse getReviewById(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));

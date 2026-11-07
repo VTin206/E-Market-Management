@@ -375,6 +375,27 @@ main { padding: 24px 0 60px; min-width: 0; }
 .detail-sidebar div { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
 .detail-sidebar strong, .detail-sidebar span { overflow-wrap: anywhere; }
 .detail-sidebar span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; }
+.product-reviews { min-width: 0; margin-top: 34px; border-top: 1px solid var(--line); padding-top: 22px; }
+.review-login-prompt { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: var(--muted); }
+.review-login-button { min-height: 38px; padding: 0 14px; }
+.review-form, .review-edit-form { display: grid; gap: 12px; min-width: 0; }
+.review-form { grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) auto; align-items: end; margin-bottom: 18px; }
+.review-form label, .review-edit-form label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: 14px; }
+.review-form select, .review-edit-form select, .review-form textarea, .review-edit-form textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: #fff; color: var(--text); font: inherit; }
+.review-form select, .review-edit-form select { min-height: 44px; }
+.review-form textarea, .review-edit-form textarea { min-height: 44px; resize: vertical; }
+.review-list { display: grid; gap: 12px; min-width: 0; }
+.review-list .empty-state { margin: 0; }
+.review-card { min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+.review-card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
+.review-card-head strong, .review-card p { overflow-wrap: anywhere; }
+.review-card time { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.review-card p { margin: 10px 0 0; white-space: pre-wrap; }
+.review-rating { color: #d97706; letter-spacing: 2px; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.review-actions .ghost-button { min-height: 36px; border: 1px solid var(--line); background: #fff; color: var(--primary); padding: 0 12px; }
+.review-actions .danger-text { color: var(--danger); }
+.review-edit-form .ghost-button { color: var(--primary); }
 
 @media (max-width: 1280px) {
     .header-main { grid-template-columns: auto auto 1fr; padding: 10px 0; }
@@ -411,6 +432,7 @@ main { padding: 24px 0 60px; min-width: 0; }
     .product-media .device-mock { transform: scale(.72); }
     .product-name { min-height: 58px; font-size: 13px; }
     .text-button { display: none; }
+    .review-form { grid-template-columns: minmax(0, 1fr); }
     .card-actions { grid-template-columns: 1fr; }
     .newsletter, .newsletter form { display: grid; }
     .floating-actions { right: 10px; bottom: 10px; }

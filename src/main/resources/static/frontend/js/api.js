@@ -1,5 +1,6 @@
 (function () {
     const storageKey = "emarket_access_token";
+    const userNameKey = "emarket_user_name";
     const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
 
     function getToken() {
@@ -14,6 +15,11 @@
 
     function clearToken() {
         localStorage.removeItem(storageKey);
+        localStorage.removeItem(userNameKey);
+    }
+
+    function setUserName(userName) {
+        if (userName) localStorage.setItem(userNameKey, userName);
     }
 
     async function request(path, options = {}) {
@@ -96,6 +102,16 @@
 
     window.emarketApi = {
         getToken,
+        getUserName() {
+            const storedUserName = localStorage.getItem(userNameKey);
+            if (storedUserName) return storedUserName;
+            try {
+                const encodedClaims = getToken()?.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+                return encodedClaims ? JSON.parse(atob(encodedClaims)).sub || null : null;
+            } catch (error) {
+                return null;
+            }
+        },
         setToken,
         clearToken,
         async login(payload) {
@@ -104,6 +120,7 @@
                 body: JSON.stringify(payload)
             });
             setToken(data.accessToken);
+            setUserName(payload.userName);
             return data;
         },
         async register(payload) {
@@ -112,6 +129,7 @@
                 body: JSON.stringify(payload)
             });
             setToken(data.accessToken);
+            setUserName(payload.userName);
             return data;
         },
         async getProducts() {
@@ -144,6 +162,24 @@
         },
         async getMyOrders() {
             return request("/api/orders/me");
+        },
+        async getReviews(productId) {
+            return request(`/api/reviews?productId=${encodeURIComponent(productId)}`);
+        },
+        async createReview(productId, payload) {
+            return request(`/api/reviews/product/${productId}`, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        },
+        async updateReview(reviewId, payload) {
+            return request(`/api/reviews/${reviewId}`, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+        },
+        async deleteReview(reviewId) {
+            return request(`/api/reviews/${reviewId}`, { method: "DELETE" });
         }
     };
 })();

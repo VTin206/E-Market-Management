@@ -1,8 +1,15 @@
 package E_Market_Management.config;
 
+import java.io.IOException;
+import java.time.Instant;
+
+import E_Market_Management.shared.dto.ApiResponse;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -13,6 +20,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import E_Market_Management.auth.security.CustomUserDetailsService;
 import E_Market_Management.auth.security.JwtAuthenticationFilter;
@@ -31,10 +40,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JsonMapper jsonMapper) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, exception) -> writeSecurityError(
+                    request, response, jsonMapper, HttpStatus.UNAUTHORIZED, "Authentication is required"
+                ))
+                .accessDeniedHandler((request, response, exception) -> writeSecurityError(
+                    request, response, jsonMapper, HttpStatus.FORBIDDEN, "You do not have permission to access this resource"
+                ))
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/frontend/**").permitAll()
@@ -44,8 +61,13 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/reviews"
+                    "/api/reviews",
+                    "/api/reviews/**"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/reviews/product/**")
+                    .hasAnyRole("CUSTOMER", "MEMBER")
+                .requestMatchers(HttpMethod.PUT, "/api/reviews/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").authenticated()
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/orders"
@@ -115,6 +137,24 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    private void writeSecurityError(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        JsonMapper jsonMapper,
+        HttpStatus status,
+        String message
+    ) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        jsonMapper.writeValue(response.getOutputStream(), new ApiResponse(
+            Instant.now(),
+            status.value(),
+            status.getReasonPhrase(),
+            message,
+            request.getRequestURI()
+        ));
     }
 
     @Bean

@@ -12,6 +12,7 @@ import E_Market_Management.auth.dto.RegisterRequest;
 import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.auth.security.CustomUserDetailsService;
 import E_Market_Management.auth.security.JwtService;
+import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
@@ -36,11 +37,11 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
 
         if(userRepository.existsByUserName(request.getUserName())) {
-            throw new IllegalArgumentException("Username đã tồn tại!");
+            throw new ConflictException("Username đã tồn tại!");
         }
 
         if(userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email đã tồn tại");
+            throw new ConflictException("Email đã tồn tại");
         }
 
         User user = User.builder()

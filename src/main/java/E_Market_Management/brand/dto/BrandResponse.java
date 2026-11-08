@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class BrandResponse {
+    private Long id;
     private String name;
     private String country;
     private String logo;

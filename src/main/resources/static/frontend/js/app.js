@@ -9,7 +9,18 @@
         reviewItems: [],
         editingReviewId: null,
         quantity: 1,
-        submittingOrder: false
+        submittingOrder: false,
+        view: "listing",
+        adminTab: "orders",
+        adminEditing: null,
+        admin: {
+            products: [],
+            orders: [],
+            categories: [],
+            brands: [],
+            memberships: [],
+            error: ""
+        }
     };
 
     const $ = (selector) => document.querySelector(selector);
@@ -42,6 +53,13 @@
         cartCount: $("#cartCount"),
         accountButton: $("#accountButton"),
         accountLabel: $("#accountLabel"),
+        adminButton: $("#adminButton"),
+        adminView: $("#adminView"),
+        adminSummary: $("#adminSummary"),
+        adminContent: $("#adminContent"),
+        adminTabs: $("#adminTabs"),
+        adminRefresh: $("#adminRefresh"),
+        backToStore: $("#backToStore"),
         myOrdersButton: $("#myOrdersButton"),
         logoutButton: $("#logoutButton"),
         ordersModal: $("#ordersModal"),
@@ -294,8 +312,12 @@
     }
 
     function setView(view) {
+        state.view = view;
         document.querySelectorAll(".listing-view").forEach((section) => section.classList.toggle("hidden", view !== "listing"));
         nodes.productDetail.classList.toggle("hidden", view !== "detail");
+        nodes.adminView.classList.toggle("hidden", view !== "admin");
+        nodes.footer.classList.toggle("hidden", view === "admin");
+        document.body.classList.toggle("admin-mode", view === "admin");
     }
 
     function renderDetail(product) {
@@ -695,6 +717,301 @@
         }
     }
 
+    function adminHeading(title, description, addLabel, addType) {
+        return '<div class="admin-section-heading"><div><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(description) + '</p></div>'
+            + (addLabel ? '<button class="primary-button" type="button" data-admin-add="' + escapeHtml(addType) + '">' + icon("plus", 17) + escapeHtml(addLabel) + '</button>' : "")
+            + '</div>';
+    }
+
+    function renderAdminSummary() {
+        const products = state.admin.products;
+        const orders = state.admin.orders;
+        const pendingOrders = orders.filter((order) => order.status === "PENDING").length;
+        const lowStock = products.filter((product) => Number(product.stock) <= 5).length;
+        const items = [
+            { label: "Sản phẩm", value: products.length, icon: "package" },
+            { label: "Tổng đơn hàng", value: orders.length, icon: "clipboard-list" },
+            { label: "Chờ xác nhận", value: pendingOrders, icon: "clock-3" },
+            { label: "Sắp hết hàng", value: lowStock, icon: "triangle-alert" }
+        ];
+        nodes.adminSummary.innerHTML = items.map((item) =>
+            '<article class="admin-stat"><span class="admin-stat-icon">' + icon(item.icon, 19) + '</span><div><span>' + item.label
+            + '</span><strong>' + item.value + '</strong></div></article>'
+        ).join("");
+        refreshIcons();
+    }
+
+    function renderAdminDashboard() {
+        renderAdminSummary();
+        nodes.adminTabs.querySelectorAll("[data-admin-tab]").forEach((button) => {
+            const active = button.dataset.adminTab === state.adminTab;
+            button.classList.toggle("active", active);
+            button.setAttribute("aria-selected", String(active));
+        });
+        nodes.adminContent.innerHTML = state.admin.error
+            ? '<div class="admin-message admin-error"><strong>Không tải được dữ liệu quản trị</strong><p>' + escapeHtml(state.admin.error)
+                + '</p><button class="admin-inline-button" type="button" data-admin-retry>Thử lại</button></div>'
+            : renderAdminTab();
+        refreshIcons();
+    }
+
+    function renderAdminTab() {
+        if (state.adminTab === "products") return renderAdminProducts();
+        if (state.adminTab === "categories") return renderAdminCategories();
+        if (state.adminTab === "brands") return renderAdminBrands();
+        if (state.adminTab === "memberships") return renderAdminMemberships();
+        return renderAdminOrders();
+    }
+
+    function renderAdminOrders() {
+        const orders = [...state.admin.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return adminHeading("Đơn hàng", "Theo dõi thông tin nhận hàng và cập nhật trạng thái đơn.", "", "")
+            + (orders.length ? '<div class="admin-order-list">' + orders.map((order) => {
+                const allowed = order.status === "PENDING" ? ["PROCESSING", "CANCELLED"]
+                    : order.status === "PROCESSING" ? ["COMPLETED", "CANCELLED"] : [];
+                const statusControl = allowed.length
+                    ? '<div class="admin-order-status"><label for="orderStatus' + order.id + '">Cập nhật trạng thái</label>'
+                        + '<select id="orderStatus' + order.id + '" data-order-status="' + order.id + '">'
+                        + allowed.map((status) => '<option value="' + status + '">' + escapeHtml(orderStatusLabel(status)) + '</option>').join("")
+                        + '</select><button class="admin-inline-button" type="button" data-order-update="' + order.id + '">Lưu</button></div>'
+                    : '<span class="admin-status-badge ' + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span>';
+                return '<article class="admin-order-card"><div class="admin-order-top"><div><span class="admin-order-number">Đơn #' + escapeHtml(order.id)
+                    + '</span><h3>' + escapeHtml(order.customerName || "Khách hàng") + '</h3></div><span class="admin-status-badge '
+                    + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span></div>'
+                    + '<div class="admin-order-meta"><span>' + escapeHtml(order.phone || "Chưa có số điện thoại") + '</span><span>'
+                    + escapeHtml(orderDate(order.createdAt)) + '</span><span class="admin-order-address">' + escapeHtml(order.address || "Chưa có địa chỉ") + '</span></div>'
+                    + '<div class="admin-order-items">' + ((order.items || []).map((item) =>
+                        '<div><span>' + escapeHtml(item.product?.name || "Sản phẩm") + ' × ' + (Number(item.quantity) || 0)
+                        + '</span><strong>' + formatMoney(Number(item.unitPrice || item.product?.price || 0) * Number(item.quantity || 0)) + '</strong></div>'
+                    ).join("") || '<span>Đơn chưa có sản phẩm.</span>') + '</div>'
+                    + '<div class="admin-order-bottom"><div><span>Tổng đơn hàng</span><strong>' + formatMoney(order.totalAmount) + '</strong></div>'
+                    + statusControl + '</div></article>';
+            }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới sẽ xuất hiện ở đây.</p></div>');
+    }
+
+    function renderAdminProductForm() {
+        const editing = state.adminEditing?.type === "product"
+            ? state.admin.products.find((item) => item.id === state.adminEditing.id) : null;
+        const categoryOptions = '<option value="">Chọn danh mục</option>' + state.admin.categories.map((category) =>
+            '<option value="' + category.id + '"' + (editing?.category?.id === category.id ? " selected" : "") + '>' + escapeHtml(category.name) + '</option>'
+        ).join("");
+        const brandOptions = '<option value="">Chọn thương hiệu</option>' + state.admin.brands.map((brand) =>
+            '<option value="' + brand.id + '"' + (editing?.brand?.id === brand.id ? " selected" : "") + '>' + escapeHtml(brand.name) + '</option>'
+        ).join("");
+        const locked = !state.admin.categories.length || !state.admin.brands.length;
+        return '<form class="admin-form" id="adminProductForm"><div class="admin-form-title"><strong>'
+            + (editing ? "Cập nhật sản phẩm" : "Thêm sản phẩm") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + (locked ? '<p class="admin-form-hint">Cần tạo ít nhất một danh mục và một thương hiệu trước khi thêm sản phẩm.</p>' : "")
+            + '<div class="admin-form-grid"><label>Tên sản phẩm<input name="name" required maxlength="255" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + '<label>Giá bán (₫)<input name="price" type="number" min="0.01" step="0.01" required value="' + escapeHtml(editing?.price ?? "") + '"></label>'
+            + '<label>Tồn kho<input name="stock" type="number" min="0" step="1" required value="' + escapeHtml(editing?.stock ?? 0) + '"></label>'
+            + '<label>Danh mục<select name="categoryId" required>' + categoryOptions + '</select></label>'
+            + '<label>Thương hiệu<select name="brandId" required>' + brandOptions + '</select></label>'
+            + '<label>Đường dẫn ảnh<input name="imageUrl" type="text" placeholder="https://... hoặc /frontend/assets/..." value="' + escapeHtml(editing?.imageUrl || "") + '"></label>'
+            + '<label class="admin-form-wide">Mô tả<textarea name="description" rows="3">' + escapeHtml(editing?.description || "") + '</textarea></label></div>'
+            + '<div class="admin-form-actions"><button class="primary-button" type="submit" ' + (locked ? "disabled" : "") + '>'
+            + (editing ? "Lưu thay đổi" : "Tạo sản phẩm") + '</button><button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
+    }
+
+    function renderAdminProducts() {
+        const rows = state.admin.products.map((product) =>
+            '<tr><td class="admin-id">#' + escapeHtml(product.id) + '</td><td><div class="admin-product-cell">'
+            + (product.imageUrl ? '<img src="' + escapeHtml(product.imageUrl) + '" alt="" loading="lazy">' : '<span class="admin-product-placeholder">' + icon("package", 20) + '</span>')
+            + '<div><strong>' + escapeHtml(product.name) + '</strong><small>' + escapeHtml(product.brand?.name || "Thương hiệu chưa chọn")
+            + ' · ' + escapeHtml(product.category?.name || "Danh mục chưa chọn") + '</small></div></div></td><td>' + formatMoney(product.price)
+            + '</td><td><span class="admin-stock ' + (Number(product.stock) <= 5 ? "low" : "") + '">' + Number(product.stock || 0) + '</span></td>'
+            + '<td><div class="admin-row-actions"><button class="admin-text-button" type="button" data-admin-edit-type="product" data-admin-edit-id="' + product.id + '">Sửa</button>'
+            + '<button class="admin-text-button danger" type="button" data-admin-delete-type="product" data-admin-delete-id="' + product.id + '">Xóa</button></div></td></tr>'
+        ).join("");
+        return adminHeading("Sản phẩm", "Cập nhật thông tin, giá bán và số lượng tồn kho.", "Thêm sản phẩm", "product")
+            + (state.adminEditing?.type === "product" ? renderAdminProductForm() : "")
+            + (rows ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Mã</th><th>Sản phẩm</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+                : '<div class="admin-message"><strong>Chưa có sản phẩm</strong><p>Tạo sản phẩm đầu tiên để bắt đầu bán hàng.</p></div>');
+    }
+
+    function renderAdminCategoryForm() {
+        const editing = state.adminEditing?.type === "category"
+            ? state.admin.categories.find((item) => item.id === state.adminEditing.id) : null;
+        return '<form class="admin-form admin-compact-form" id="adminCategoryForm"><div class="admin-form-title"><strong>'
+            + (editing ? "Cập nhật danh mục" : "Thêm danh mục") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + '<div class="admin-form-grid"><label>Tên danh mục<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + '<label>Mô tả<input name="description" value="' + escapeHtml(editing?.description || "") + '"></label></div>'
+            + '<div class="admin-form-actions"><button class="primary-button" type="submit">' + (editing ? "Lưu thay đổi" : "Tạo danh mục") + '</button>'
+            + '<button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
+    }
+
+    function renderAdminCategories() {
+        const cards = state.admin.categories.map((category) =>
+            '<article class="admin-entity-card"><div><span class="admin-id">DANH MỤC #' + escapeHtml(category.id) + '</span><h3>' + escapeHtml(category.name)
+            + '</h3><p>' + escapeHtml(category.description || "Chưa có mô tả") + '</p></div><div class="admin-row-actions">'
+            + '<button class="admin-text-button" type="button" data-admin-edit-type="category" data-admin-edit-id="' + category.id + '">Sửa</button>'
+            + '<button class="admin-text-button danger" type="button" data-admin-delete-type="category" data-admin-delete-id="' + category.id + '">Xóa</button></div></article>'
+        ).join("");
+        return adminHeading("Danh mục", "Sắp xếp sản phẩm theo nhóm để khách dễ tìm.", "Thêm danh mục", "category")
+            + (state.adminEditing?.type === "category" ? renderAdminCategoryForm() : "")
+            + (cards ? '<div class="admin-entity-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có danh mục</strong><p>Thêm danh mục trước khi tạo sản phẩm.</p></div>');
+    }
+
+    function renderAdminBrandForm() {
+        const editing = state.adminEditing?.type === "brand"
+            ? state.admin.brands.find((item) => item.id === state.adminEditing.id) : null;
+        return '<form class="admin-form admin-compact-form" id="adminBrandForm"><div class="admin-form-title"><strong>'
+            + (editing ? "Cập nhật thương hiệu" : "Thêm thương hiệu") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + '<div class="admin-form-grid"><label>Tên thương hiệu<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + '<label>Quốc gia<input name="country" required maxlength="100" value="' + escapeHtml(editing?.country || "") + '"></label>'
+            + '<label class="admin-form-wide">Logo (đường dẫn ảnh)<input name="logo" required maxlength="255" value="' + escapeHtml(editing?.logo || "") + '"></label></div>'
+            + '<div class="admin-form-actions"><button class="primary-button" type="submit">' + (editing ? "Lưu thay đổi" : "Tạo thương hiệu") + '</button>'
+            + '<button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
+    }
+
+    function renderAdminBrands() {
+        const cards = state.admin.brands.map((brand) =>
+            '<article class="admin-entity-card"><div class="admin-brand-card-main">' + (brand.logo
+                ? '<img class="admin-brand-logo" src="' + escapeHtml(brand.logo) + '" alt="" loading="lazy">'
+                : '<span class="admin-brand-logo admin-brand-placeholder">' + icon("badge-check", 20) + '</span>')
+            + '<div><span class="admin-id">THƯƠNG HIỆU #' + escapeHtml(brand.id) + '</span><h3>' + escapeHtml(brand.name)
+            + '</h3><p>' + escapeHtml(brand.country || "Chưa cập nhật quốc gia") + '</p></div></div><div class="admin-row-actions">'
+            + '<button class="admin-text-button" type="button" data-admin-edit-type="brand" data-admin-edit-id="' + brand.id + '">Sửa</button>'
+            + '<button class="admin-text-button danger" type="button" data-admin-delete-type="brand" data-admin-delete-id="' + brand.id + '">Xóa</button></div></article>'
+        ).join("");
+        return adminHeading("Thương hiệu", "Quản lý nhãn hàng hiển thị trong danh mục sản phẩm.", "Thêm thương hiệu", "brand")
+            + (state.adminEditing?.type === "brand" ? renderAdminBrandForm() : "")
+            + (cards ? '<div class="admin-entity-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có thương hiệu</strong><p>Thêm thương hiệu trước khi tạo sản phẩm.</p></div>');
+    }
+
+    function renderAdminMembershipForm() {
+        return '<form class="admin-form admin-compact-form" id="adminMembershipForm"><div class="admin-form-title"><strong>Tạo hạng thành viên</strong></div>'
+            + '<div class="admin-form-grid"><label>Tên hạng<input name="name" required maxlength="100" placeholder="Ví dụ: Silver"></label>'
+            + '<label>Điểm yêu cầu<input name="requiredPoints" type="number" min="0" step="1" required value="0"></label>'
+            + '<label>Ưu đãi (%)<input name="discountPercent" type="number" min="0" max="100" step="1" required value="0"></label></div>'
+            + '<div class="admin-form-actions"><button class="primary-button" type="submit">Tạo hạng</button></div></form>';
+    }
+
+    function renderAdminMemberships() {
+        const cards = state.admin.memberships.map((membership) =>
+            '<article class="admin-membership-card"><span class="admin-membership-icon">' + icon("award", 22) + '</span><div><span class="admin-id">HẠNG #' + escapeHtml(membership.id)
+            + '</span><h3>' + escapeHtml(membership.name) + '</h3><p>' + Number(membership.requiredPoints || 0) + ' điểm để đạt hạng này</p></div>'
+            + '<strong>' + Number(membership.discountPercent || 0) + '%<small> ưu đãi</small></strong></article>'
+        ).join("");
+        return adminHeading("Hạng thành viên", "Thiết lập mức điểm và phần trăm ưu đãi cho từng hạng.", "", "")
+            + renderAdminMembershipForm()
+            + (cards ? '<div class="admin-membership-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có hạng thành viên</strong><p>Các hạng đã tạo sẽ xuất hiện ở đây.</p></div>');
+    }
+
+    async function loadAdminData() {
+        state.admin.error = "";
+        nodes.adminContent.innerHTML = '<div class="admin-message"><span class="admin-spinner"></span><p>Đang tải dữ liệu quản trị…</p></div>';
+        try {
+            const [orders, products, categories, brands, memberships] = await Promise.all([
+                window.emarketApi.getAllOrders(),
+                window.emarketApi.getProducts(),
+                window.emarketApi.getCategories(),
+                window.emarketApi.getBrands(),
+                window.emarketApi.getMemberships()
+            ]);
+            state.admin.orders = orders;
+            state.admin.products = products;
+            state.admin.categories = categories;
+            state.admin.brands = brands;
+            state.admin.memberships = memberships;
+        } catch (error) {
+            state.admin.error = error.message || "Vui lòng kiểm tra kết nối hoặc quyền quản trị.";
+        }
+        renderAdminDashboard();
+    }
+
+    function openAdmin() {
+        if (!window.emarketApi.getToken()) {
+            showToast("Đăng nhập tài khoản quản trị để tiếp tục.");
+            openAuth("login");
+            return;
+        }
+        if (window.emarketApi.getRole() !== "ADMIN") {
+            showToast("Tài khoản hiện tại không có quyền quản trị.");
+            return;
+        }
+        state.adminTab = "orders";
+        state.adminEditing = null;
+        setView("admin");
+        void loadAdminData();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function submitAdminForm(event) {
+        const form = event.target;
+        if (!form.id.startsWith("admin")) return;
+        event.preventDefault();
+        const values = Object.fromEntries(new FormData(form).entries());
+        try {
+            if (form.id === "adminProductForm") {
+                const payload = {
+                    name: values.name.trim(),
+                    description: values.description.trim(),
+                    price: Number(values.price),
+                    stock: Number(values.stock),
+                    imageUrl: values.imageUrl.trim(),
+                    categoryId: Number(values.categoryId),
+                    brandId: Number(values.brandId)
+                };
+                if (state.adminEditing?.type === "product" && state.adminEditing.id != null) {
+                    await window.emarketApi.updateProduct(state.adminEditing.id, payload);
+                    showToast("Đã cập nhật sản phẩm.");
+                } else {
+                    await window.emarketApi.createProduct(payload);
+                    showToast("Đã tạo sản phẩm.");
+                }
+            } else if (form.id === "adminCategoryForm") {
+                const payload = { name: values.name.trim(), description: values.description.trim() };
+                if (state.adminEditing?.type === "category" && state.adminEditing.id != null) {
+                    await window.emarketApi.updateCategory(state.adminEditing.id, payload);
+                    showToast("Đã cập nhật danh mục.");
+                } else {
+                    await window.emarketApi.createCategory(payload);
+                    showToast("Đã tạo danh mục.");
+                }
+            } else if (form.id === "adminBrandForm") {
+                const payload = { name: values.name.trim(), country: values.country.trim(), logo: values.logo.trim() };
+                if (state.adminEditing?.type === "brand" && state.adminEditing.id != null) {
+                    await window.emarketApi.updateBrand(state.adminEditing.id, payload);
+                    showToast("Đã cập nhật thương hiệu.");
+                } else {
+                    await window.emarketApi.createBrand(payload);
+                    showToast("Đã tạo thương hiệu.");
+                }
+            } else if (form.id === "adminMembershipForm") {
+                await window.emarketApi.createMembership({
+                    name: values.name.trim(),
+                    requiredPoints: Number(values.requiredPoints),
+                    discountPercent: Number(values.discountPercent)
+                });
+                showToast("Đã tạo hạng thành viên.");
+            }
+            state.adminEditing = null;
+            await loadAdminData();
+            if (form.id === "adminProductForm" || form.id === "adminCategoryForm" || form.id === "adminBrandForm") await loadProducts();
+        } catch (error) {
+            showToast("Không thể lưu: " + error.message);
+        }
+    }
+
+    async function deleteAdminItem(type, id) {
+        const item = type === "product" ? state.admin.products.find((entry) => entry.id === id)
+            : type === "category" ? state.admin.categories.find((entry) => entry.id === id)
+                : state.admin.brands.find((entry) => entry.id === id);
+        const label = item?.name || ("#" + id);
+        if (!window.confirm("Xóa " + label + "? Hành động này có thể bị từ chối nếu dữ liệu đang được tham chiếu.")) return;
+        try {
+            if (type === "product") await window.emarketApi.deleteProduct(id);
+            if (type === "category") await window.emarketApi.deleteCategory(id);
+            if (type === "brand") await window.emarketApi.deleteBrand(id);
+            showToast("Đã xóa " + label + ".");
+            await loadAdminData();
+            await loadProducts();
+        } catch (error) {
+            showToast("Không thể xóa: " + error.message);
+        }
+    }
+
     async function loadAccountCart() {
         try {
             state.cart = (await window.emarketApi.getCart()).items;
@@ -738,11 +1055,14 @@
 
     function updateAccountState() {
         const signedIn = Boolean(window.emarketApi.getToken());
+        const isAdmin = signedIn && window.emarketApi.getRole() === "ADMIN";
         nodes.accountLabel.textContent = signedIn ? "Tài khoản" : "Thông tin";
         nodes.accountButton.setAttribute("aria-label", signedIn ? "Tài khoản đã đăng nhập" : "Đăng nhập hoặc đăng ký");
         document.querySelectorAll("[data-auth-open]").forEach((button) => button.classList.toggle("hidden", signedIn));
         nodes.myOrdersButton.classList.toggle("hidden", !signedIn);
+        nodes.adminButton.classList.toggle("hidden", !isAdmin);
         nodes.logoutButton.classList.toggle("hidden", !signedIn);
+        if (!isAdmin && state.view === "admin") setView("listing");
     }
 
     async function handleAuthSubmit(event, type) {
@@ -894,6 +1214,68 @@
         nodes.orderLookupButton.addEventListener("click", showMyOrders);
         nodes.notifyButton.addEventListener("click", () => showToast("Bạn đang không có thông báo mới."));
         nodes.contactButton.addEventListener("click", () => window.location.assign("tel:19006750"));
+        nodes.adminButton.addEventListener("click", openAdmin);
+        nodes.backToStore.addEventListener("click", () => {
+            setView("listing");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        nodes.adminRefresh.addEventListener("click", () => void loadAdminData());
+        nodes.adminTabs.addEventListener("click", (event) => {
+            const tab = event.target.closest("[data-admin-tab]");
+            if (!tab) return;
+            state.adminTab = tab.dataset.adminTab;
+            state.adminEditing = null;
+            renderAdminDashboard();
+        });
+        nodes.adminContent.addEventListener("click", async (event) => {
+            if (event.target.closest("[data-admin-retry]")) {
+                await loadAdminData();
+                return;
+            }
+            if (event.target.closest("[data-admin-cancel]")) {
+                state.adminEditing = null;
+                renderAdminDashboard();
+                return;
+            }
+            const addButton = event.target.closest("[data-admin-add]");
+            if (addButton) {
+                state.adminEditing = { type: addButton.dataset.adminAdd, id: null };
+                renderAdminDashboard();
+                return;
+            }
+            const editButton = event.target.closest("[data-admin-edit-type]");
+            if (editButton) {
+                state.adminEditing = {
+                    type: editButton.dataset.adminEditType,
+                    id: Number(editButton.dataset.adminEditId)
+                };
+                renderAdminDashboard();
+                return;
+            }
+            const deleteButton = event.target.closest("[data-admin-delete-type]");
+            if (deleteButton) {
+                await deleteAdminItem(deleteButton.dataset.adminDeleteType, Number(deleteButton.dataset.adminDeleteId));
+                return;
+            }
+            const updateOrderButton = event.target.closest("[data-order-update]");
+            if (updateOrderButton) {
+                const orderId = Number(updateOrderButton.dataset.orderUpdate);
+                const select = nodes.adminContent.querySelector('[data-order-status="' + orderId + '"]');
+                if (!select?.value) return;
+                updateOrderButton.disabled = true;
+                try {
+                    await window.emarketApi.updateOrderStatus(orderId, select.value);
+                    showToast("Đã cập nhật trạng thái đơn hàng.");
+                    await loadAdminData();
+                } catch (error) {
+                    showToast("Không thể cập nhật đơn hàng: " + error.message);
+                    updateOrderButton.disabled = false;
+                }
+            }
+        });
+        nodes.adminContent.addEventListener("submit", (event) => {
+            void submitAdminForm(event);
+        });
     }
 
     async function loadProducts() {

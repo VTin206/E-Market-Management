@@ -1,6 +1,7 @@
 (function () {
     const storageKey = "emarket_access_token";
     const userNameKey = "emarket_user_name";
+    const userRoleKey = "emarket_user_role";
     const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
 
     function getToken() {
@@ -16,6 +17,7 @@
     function clearToken() {
         localStorage.removeItem(storageKey);
         localStorage.removeItem(userNameKey);
+        localStorage.removeItem(userRoleKey);
     }
 
     function setUserName(userName) {
@@ -112,6 +114,9 @@
                 return null;
             }
         },
+        getRole() {
+            return localStorage.getItem(userRoleKey);
+        },
         setToken,
         clearToken,
         async login(payload) {
@@ -121,6 +126,7 @@
             });
             setToken(data.accessToken);
             setUserName(payload.userName);
+            if (data.role) localStorage.setItem(userRoleKey, data.role);
             return data;
         },
         async register(payload) {
@@ -130,6 +136,7 @@
             });
             setToken(data.accessToken);
             setUserName(payload.userName);
+            if (data.role) localStorage.setItem(userRoleKey, data.role);
             return data;
         },
         async getProducts() {
@@ -162,6 +169,75 @@
         },
         async getMyOrders() {
             return request("/api/orders/me");
+        },
+        async getAllOrders() {
+            return request("/api/orders");
+        },
+        async updateOrderStatus(orderId, status) {
+            return request("/api/orders/" + orderId, {
+                method: "PUT",
+                body: JSON.stringify({ status })
+            });
+        },
+        async createProduct(payload) {
+            return request("/api/products", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        },
+        async updateProduct(productId, payload) {
+            return request("/api/products/" + productId, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+        },
+        async deleteProduct(productId) {
+            return request("/api/products/" + productId, { method: "DELETE" });
+        },
+        async getCategories() {
+            return request("/api/category");
+        },
+        async createCategory(payload) {
+            return request("/api/category", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        },
+        async updateCategory(categoryId, payload) {
+            return request("/api/category/" + categoryId, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+        },
+        async deleteCategory(categoryId) {
+            return request("/api/category/" + categoryId, { method: "DELETE" });
+        },
+        async getBrands() {
+            return request("/api/brand");
+        },
+        async createBrand(payload) {
+            return request("/api/brand", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        },
+        async updateBrand(brandId, payload) {
+            return request("/api/brand/" + brandId, {
+                method: "PUT",
+                body: JSON.stringify(payload)
+            });
+        },
+        async deleteBrand(brandId) {
+            return request("/api/brand/" + brandId, { method: "DELETE" });
+        },
+        async getMemberships() {
+            return request("/api/membership");
+        },
+        async createMembership(payload) {
+            return request("/api/membership", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
         },
         async getReviews(productId) {
             return request(`/api/reviews?productId=${encodeURIComponent(productId)}`);

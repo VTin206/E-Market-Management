@@ -10,6 +10,7 @@ import E_Market_Management.brand.entity.Brand;
 public class BrandMapper {
     public BrandResponse toResponse(Brand brand) {
         return BrandResponse.builder()
+            .id(brand.getId())
             .name(brand.getName())
             .country(brand.getCountry())
             .logo(brand.getLogo())

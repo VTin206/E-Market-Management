@@ -64,6 +64,7 @@
                         <button data-auth-open="login" type="button">Đăng nhập</button>
                         <button data-auth-open="register" type="button">Đăng ký</button>
                         <button id="myOrdersButton" type="button">Đơn hàng của tôi</button>
+                        <button id="adminButton" class="hidden" type="button">Quản trị cửa hàng</button>
                         <button id="logoutButton" type="button">Đăng xuất</button>
                         <button type="button">Danh sách yêu thích</button>
                         <button type="button">So sánh sản phẩm</button>
@@ -123,6 +124,30 @@
         <section class="content-grid shell listing-view" id="contentGrid"></section>
         <section class="newsletter shell listing-view" id="newsletter"></section>
         <section class="detail-section shell panel hidden" id="productDetail"></section>
+        <section class="admin-view shell hidden" id="adminView" aria-label="Quản trị cửa hàng">
+            <div class="admin-hero">
+                <div>
+                    <span class="admin-kicker">E-MARKET · QUẢN TRỊ</span>
+                    <h1>Vận hành cửa hàng</h1>
+                    <p>Quản lý đơn hàng, sản phẩm và danh mục trong một nơi.</p>
+                </div>
+                <button class="admin-back-button" id="backToStore" type="button">← Về cửa hàng</button>
+            </div>
+            <div class="admin-summary" id="adminSummary" aria-live="polite"></div>
+            <section class="admin-panel">
+                <div class="admin-toolbar">
+                    <div class="admin-tabs" id="adminTabs" role="tablist" aria-label="Khu vực quản trị">
+                        <button class="active" data-admin-tab="orders" role="tab" aria-selected="true" type="button">Đơn hàng</button>
+                        <button data-admin-tab="products" role="tab" aria-selected="false" type="button">Sản phẩm</button>
+                        <button data-admin-tab="categories" role="tab" aria-selected="false" type="button">Danh mục</button>
+                        <button data-admin-tab="brands" role="tab" aria-selected="false" type="button">Thương hiệu</button>
+                        <button data-admin-tab="memberships" role="tab" aria-selected="false" type="button">Hạng thành viên</button>
+                    </div>
+                    <button class="admin-refresh" id="adminRefresh" type="button">Làm mới</button>
+                </div>
+                <div class="admin-content" id="adminContent" aria-live="polite"></div>
+            </section>
+        </section>
     </main>
 
     <footer class="site-footer" id="contact"></footer>

@@ -57,7 +57,7 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(new CustomUserDetails(savedUser));
 
-        return new AuthResponse(token, "Bearer");
+        return new AuthResponse(token, "Bearer", savedUser.getRole().name());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -71,7 +71,13 @@ public class AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUserName());
         String token = jwtService.generateToken(userDetails);
+        String role = userDetails.getAuthorities().stream()
+            .map(authority -> authority.getAuthority())
+            .filter(authority -> authority.startsWith("ROLE_"))
+            .findFirst()
+            .map(authority -> authority.substring("ROLE_".length()))
+            .orElse("CUSTOMER");
 
-        return new AuthResponse(token, "Bearer");
+        return new AuthResponse(token, "Bearer", role);
     }
 }

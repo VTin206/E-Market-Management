@@ -1,7 +1,10 @@
 (function () {
     const guestCartKey = "emarket_guest_cart";
+    const newsletterStorageKey = "emarket_newsletter_emails";
+    let utilityModalOpener = null;
     const state = {
         products: [],
+        productsPage: 0,
         cart: [],
         filter: "all",
         query: "",
@@ -77,6 +80,11 @@
         catalogList: $("#catalogList"),
         megaMenu: $("#megaMenu"),
         toast: $("#toast"),
+        utilityModal: $("#utilityModal"),
+        utilityBackdrop: $("#utilityBackdrop"),
+        closeUtilityModal: $("#closeUtilityModal"),
+        utilityTitle: $("#utilityTitle"),
+        utilityContent: $("#utilityContent"),
         scrollTopButton: $("#scrollTopButton"),
         heroLoginButton: $("#heroLoginButton"),
         storeButton: $("#storeButton"),
@@ -112,6 +120,50 @@
         nodes.toast.classList.remove("hidden");
         window.clearTimeout(showToast.timer);
         showToast.timer = window.setTimeout(() => nodes.toast.classList.add("hidden"), 2800);
+    }
+
+    function openUtilityModal(title, content) {
+        utilityModalOpener = document.activeElement;
+        nodes.utilityTitle.textContent = title;
+        nodes.utilityContent.innerHTML = content;
+        nodes.utilityBackdrop.classList.remove("hidden");
+        nodes.utilityModal.classList.remove("hidden");
+        nodes.utilityModal.setAttribute("aria-hidden", "false");
+        nodes.closeUtilityModal.focus();
+        refreshIcons();
+    }
+
+    function closeUtilityModal() {
+        nodes.utilityBackdrop.classList.add("hidden");
+        nodes.utilityModal.classList.add("hidden");
+        nodes.utilityModal.setAttribute("aria-hidden", "true");
+        nodes.utilityContent.innerHTML = "";
+        if (utilityModalOpener instanceof HTMLElement) utilityModalOpener.focus();
+        utilityModalOpener = null;
+    }
+
+    function openStores() {
+        const stores = window.demoStores || [];
+        const content = stores.length
+            ? `<p class="utility-note">Địa chỉ tham khảo. Vui lòng gọi hotline để xác nhận giờ hoạt động trước khi đến.</p>
+                <div class="store-list">${stores.map((store) => `
+                    <article class="store-card">
+                        <span class="store-icon">${icon("map-pin", 20)}</span>
+                        <div><strong>${escapeHtml(store.name)}</strong><p>${escapeHtml(store.address)}</p></div>
+                    </article>
+                `).join("")}</div>`
+            : `<p class="empty-state">Chưa có thông tin cửa hàng.</p>`;
+        openUtilityModal("Hệ thống cửa hàng", content);
+    }
+
+    function openNotifications() {
+        openUtilityModal("Thông báo", `
+            <div class="utility-empty">
+                ${icon("bell-ring", 28)}
+                <strong>Bạn chưa có thông báo mới</strong>
+                <p>Thông tin cập nhật đơn hàng sẽ xuất hiện tại đây.</p>
+            </div>
+        `);
     }
 
     function productVisual(product, compact = false) {
@@ -210,6 +262,7 @@
             </div>
             <div class="status-line" id="dataStatus"></div>
             <div class="product-grid" id="productGrid"></div>
+            <nav class="product-pagination hidden" id="productPagination" aria-label="Phân trang sản phẩm"></nav>
         `;
 
         nodes.megaMenu.innerHTML = window.demoMenu.map((group) => `
@@ -241,10 +294,33 @@
 
     function renderProducts() {
         const grid = $("#productGrid");
+        const pagination = $("#productPagination");
         const filtered = filteredProducts();
-        grid.innerHTML = filtered.length
-            ? filtered.map((product) => productCard(product)).join("")
+        const pageSize = 12;
+        const pageCount = Math.ceil(filtered.length / pageSize);
+        state.productsPage = Math.min(state.productsPage, Math.max(pageCount - 1, 0));
+        const pageProducts = filtered.slice(state.productsPage * pageSize, (state.productsPage + 1) * pageSize);
+
+        grid.innerHTML = pageProducts.length
+            ? pageProducts.map((product) => productCard(product)).join("")
             : `<div class="empty-state">Không tìm thấy sản phẩm phù hợp.</div>`;
+
+        if (pageCount > 1) {
+            const firstProduct = state.productsPage * pageSize + 1;
+            const lastProduct = Math.min((state.productsPage + 1) * pageSize, filtered.length);
+            pagination.innerHTML = `
+                <span class="pagination-summary" aria-live="polite">Hiển thị ${firstProduct}–${lastProduct} trong ${filtered.length} sản phẩm</span>
+                <div class="product-page-controls">
+                    <button class="product-page-button" type="button" data-products-page="${state.productsPage - 1}" ${state.productsPage === 0 ? "disabled" : ""} aria-label="Trang trước">${icon("chevron-left", 17)}<span>Trước</span></button>
+                    <span class="pagination-current">Trang ${state.productsPage + 1} / ${pageCount}</span>
+                    <button class="product-page-button" type="button" data-products-page="${state.productsPage + 1}" ${state.productsPage >= pageCount - 1 ? "disabled" : ""} aria-label="Trang sau"><span>Sau</span>${icon("chevron-right", 17)}</button>
+                </div>
+            `;
+            pagination.classList.remove("hidden");
+        } else {
+            pagination.innerHTML = "";
+            pagination.classList.add("hidden");
+        }
         refreshIcons();
     }
 
@@ -296,7 +372,12 @@
 
         nodes.newsletter.innerHTML = `
             <div><strong>Nhận tin khuyến mãi</strong><span>Cập nhật deal điện thoại, tablet và phụ kiện mới nhất.</span></div>
-            <form><input type="email" placeholder="Email của bạn"><button class="primary-button" type="submit">Đăng ký</button></form>
+            <form id="newsletterForm">
+                <label class="visually-hidden" for="newsletterEmail">Email của bạn</label>
+                <input id="newsletterEmail" name="email" type="email" placeholder="Email của bạn" autocomplete="email" required>
+                <button class="primary-button" type="submit">Đăng ký</button>
+                <small class="newsletter-status" id="newsletterStatus" role="status" aria-live="polite">Bản demo lưu đăng ký trên trình duyệt này.</small>
+            </form>
         `;
     }
 
@@ -1088,6 +1169,7 @@
 
     function runSearch(value) {
         state.query = value.trim();
+        state.productsPage = 0;
         nodes.searchInput.value = state.query;
         setView("listing");
         renderProducts();
@@ -1097,6 +1179,7 @@
     function bindEvents() {
         document.addEventListener("click", (event) => {
             const filter = event.target.closest("[data-filter]");
+            const pageButton = event.target.closest("[data-products-page]");
             const detail = event.target.closest("[data-detail]");
             const add = event.target.closest("[data-add]");
             const search = event.target.closest("[data-menu-search]");
@@ -1106,8 +1189,14 @@
 
             if (filter) {
                 state.filter = filter.dataset.filter;
+                state.productsPage = 0;
                 document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === filter));
                 renderProducts();
+            }
+            if (pageButton && !pageButton.disabled) {
+                state.productsPage = Number(pageButton.dataset.productsPage);
+                renderProducts();
+                $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
             }
             if (detail) {
                 const product = state.products.find((item) => item.id === Number(detail.dataset.detail));
@@ -1178,6 +1267,27 @@
             event.preventDefault();
             runSearch(nodes.searchInput.value);
         });
+        nodes.newsletter.addEventListener("submit", (event) => {
+            if (!event.target.matches("#newsletterForm")) return;
+            event.preventDefault();
+
+            const email = new FormData(event.target).get("email").trim().toLowerCase();
+            const status = $("#newsletterStatus");
+            try {
+                const storedValue = JSON.parse(localStorage.getItem(newsletterStorageKey) || "[]");
+                const savedEmails = Array.isArray(storedValue) ? storedValue : [];
+                if (savedEmails.includes(email)) {
+                    status.textContent = "Email này đã được ghi nhận trên trình duyệt này.";
+                    return;
+                }
+                savedEmails.push(email);
+                localStorage.setItem(newsletterStorageKey, JSON.stringify(savedEmails));
+                status.textContent = "Đã lưu trên trình duyệt này; chưa gửi tới máy chủ.";
+                event.target.reset();
+            } catch (error) {
+                status.textContent = "Trình duyệt không cho phép lưu đăng ký trên thiết bị này.";
+            }
+        });
         nodes.cartButton.addEventListener("click", openCart);
         nodes.closeCart.addEventListener("click", closeCart);
         nodes.cartBackdrop.addEventListener("click", closeCart);
@@ -1210,9 +1320,14 @@
         nodes.catalogToggle.addEventListener("click", () => nodes.catalogPanel.classList.add("open"));
         nodes.closeCatalog.addEventListener("click", () => nodes.catalogPanel.classList.remove("open"));
         nodes.scrollTopButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-        nodes.storeButton.addEventListener("click", () => showToast("Hệ thống cửa hàng: Sài Gòn, Bình Dương và Cần Thơ."));
+        nodes.storeButton.addEventListener("click", openStores);
         nodes.orderLookupButton.addEventListener("click", showMyOrders);
-        nodes.notifyButton.addEventListener("click", () => showToast("Bạn đang không có thông báo mới."));
+        nodes.notifyButton.addEventListener("click", openNotifications);
+        nodes.closeUtilityModal.addEventListener("click", closeUtilityModal);
+        nodes.utilityBackdrop.addEventListener("click", closeUtilityModal);
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !nodes.utilityModal.classList.contains("hidden")) closeUtilityModal();
+        });
         nodes.contactButton.addEventListener("click", () => window.location.assign("tel:19006750"));
         nodes.adminButton.addEventListener("click", openAdmin);
         nodes.backToStore.addEventListener("click", () => {

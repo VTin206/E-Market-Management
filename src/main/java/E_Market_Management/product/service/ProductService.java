@@ -2,6 +2,10 @@ package E_Market_Management.product.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,21 +103,20 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts(Long categoryId, Long brandId) {
-        List<Product> products;
+    public Page<ProductResponse> getAllProducts(Long categoryId, Long brandId, int page, int size) {
+        Page<Product> products;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
         if (categoryId == null && brandId == null) {
-            products = productRepository.findAll();
+            products = productRepository.findAll(pageable);
         } else if (categoryId == null && brandId != null) {
-            products = productRepository.findByBrand_Id(brandId);
+            products = productRepository.findByBrand_Id(brandId, pageable);
         } else if (categoryId != null && brandId == null) {
-            products = productRepository.findByCategory_Id(categoryId);
+            products = productRepository.findByCategory_Id(categoryId, pageable);
         } else {
-            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId);
+            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId, pageable);
         }
 
-        return products.stream()
-            .map(product -> productMapper.toResponse(product))
-            .toList();
+        return products.map(productMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

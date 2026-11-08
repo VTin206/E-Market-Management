@@ -140,7 +140,23 @@
             return data;
         },
         async getProducts() {
-            const products = await request("/api/products");
+            const products = [];
+            const pageSize = 100;
+            let page = 0;
+
+            while (true) {
+                const result = await request(`/api/products?page=${page}&size=${pageSize}`);
+                if (Array.isArray(result)) {
+                    products.push(...result);
+                    break;
+                }
+
+                const content = Array.isArray(result?.content) ? result.content : [];
+                products.push(...content);
+                if (result?.last === true || content.length < pageSize) break;
+                page += 1;
+            }
+
             return products.map(normalizeProduct);
         },
         async getCart() {

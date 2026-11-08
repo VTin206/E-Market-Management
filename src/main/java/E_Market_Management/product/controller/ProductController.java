@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 import E_Market_Management.product.dto.ProductCreateRequest;
 import E_Market_Management.product.dto.ProductResponse;
@@ -22,12 +23,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts(
+    public ResponseEntity<Page<ProductResponse>> getAllProducts(
         @RequestParam(required = false) Long categoryId,
-        @RequestParam(required = false) Long brandId
+        @RequestParam(required = false) Long brandId,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "0") int page
     ) {
         return ResponseEntity.ok(
-            productService.getAllProducts(categoryId, brandId)
+            productService.getAllProducts(categoryId, brandId, page, size)
         );
     }
 

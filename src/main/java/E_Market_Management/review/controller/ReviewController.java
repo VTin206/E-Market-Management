@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import io.swagger.v3.oas.annotations.Operation;
 
 
 
@@ -36,6 +37,10 @@ public class ReviewController {
     }
 
     @GetMapping
+    @Operation(
+        summary = "Lấy đánh giá theo sản phẩm",
+        description = "Trả về danh sách đánh giá của sản phẩm được chỉ định bằng productId. Endpoint cho phép truy cập công khai."
+    )
     public ResponseEntity<List<ReviewResponse>> getReviewsByProduct(
         @RequestParam Long productId
     ) {
@@ -45,6 +50,10 @@ public class ReviewController {
     }
     
     @GetMapping("/{id}")
+    @Operation(
+        summary = "Lấy đánh giá theo ID",
+        description = "Trả về nội dung một đánh giá theo ID. Endpoint cho phép truy cập công khai."
+    )
     public ResponseEntity<ReviewResponse> getReviewById(@PathVariable Long id) {
         return ResponseEntity.ok(
             reviewService.getReviewById(id)
@@ -52,6 +61,10 @@ public class ReviewController {
     }
 
     @PostMapping("/product/{productId}")
+    @Operation(
+        summary = "Gửi đánh giá sản phẩm",
+        description = "Tạo đánh giá cho sản phẩm với điểm từ 1 đến 5 và nhận xét tùy chọn. Yêu cầu đăng nhập bằng tài khoản CUSTOMER hoặc MEMBER."
+    )
     public ResponseEntity<ReviewResponse> postReview(
             @Valid @RequestBody ReviewCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -63,6 +76,10 @@ public class ReviewController {
     }
 
     @PutMapping("/{reviewId}")
+    @Operation(
+        summary = "Cập nhật đánh giá",
+        description = "Cập nhật điểm và nhận xét của đánh giá. Chỉ chủ đánh giá hoặc quản trị viên được phép thực hiện; yêu cầu xác thực."
+    )
     public ResponseEntity<ReviewResponse> updateReview(
             @PathVariable Long reviewId,
             @Valid @RequestBody ReviewUpdateRequest request,
@@ -74,6 +91,10 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
+    @Operation(
+        summary = "Xóa đánh giá",
+        description = "Xóa đánh giá theo ID. Chỉ chủ đánh giá hoặc quản trị viên được phép thực hiện; yêu cầu xác thực. API trả về 204 khi xóa thành công."
+    )
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long reviewId,
             @AuthenticationPrincipal CustomUserDetails userDetails

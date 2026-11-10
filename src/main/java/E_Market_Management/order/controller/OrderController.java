@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import io.swagger.v3.oas.annotations.Operation;
 
 
 
@@ -34,6 +35,10 @@ public class OrderController {
     }
 
     @PostMapping
+    @Operation(
+        summary = "Tạo đơn hàng",
+        description = "Tạo đơn hàng ở trạng thái chờ xử lý. Khách chưa đăng nhập gửi các sản phẩm trong yêu cầu; tài khoản đã đăng nhập đặt hàng từ giỏ hàng của mình. Endpoint cho phép đặt hàng không cần xác thực."
+    )
     public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal CustomUserDetails userDetails, @Valid @RequestBody OrderCreateRequest request) {
         Long userId = (userDetails != null) ? userDetails.getId() : null;
         OrderResponse response = orderService.createOrder(userId, request);
@@ -41,6 +46,10 @@ public class OrderController {
     }
   
     @GetMapping("/me")
+    @Operation(
+        summary = "Lấy đơn hàng của tài khoản hiện tại",
+        description = "Trả về danh sách đơn hàng thuộc tài khoản đang đăng nhập, kèm các dòng sản phẩm. Yêu cầu xác thực."
+    )
     public ResponseEntity<List<OrderResponse>> getAllMyOrders(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(
@@ -49,6 +58,10 @@ public class OrderController {
     }
 
     @GetMapping
+    @Operation(
+        summary = "Lấy toàn bộ đơn hàng",
+        description = "Trả về danh sách đơn hàng trong hệ thống. Chỉ quản trị viên được phép truy cập."
+    )
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return ResponseEntity.ok(
             orderService.getAllOrders()
@@ -56,6 +69,10 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @Operation(
+        summary = "Lấy đơn hàng theo ID",
+        description = "Trả về chi tiết đơn hàng nếu người dùng đang đăng nhập là chủ đơn hoặc quản trị viên. Yêu cầu xác thực."
+    )
     public ResponseEntity<OrderResponse> getCurrentOrder(
         @PathVariable("id") Long orderId,
         @AuthenticationPrincipal CustomUserDetails userDetails
@@ -66,6 +83,10 @@ public class OrderController {
     }
 
     @PutMapping("/{id}")
+    @Operation(
+        summary = "Cập nhật trạng thái đơn hàng",
+        description = "Cập nhật trạng thái đơn hàng theo ID nếu chuyển trạng thái hợp lệ. Chỉ quản trị viên được phép thực hiện."
+    )
     public ResponseEntity<OrderResponse> updateStatus(
         @RequestBody @Valid UpdateOrderStatusRequest request,
         @PathVariable("id") Long orderId 

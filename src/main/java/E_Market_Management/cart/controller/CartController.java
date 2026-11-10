@@ -18,6 +18,7 @@ import E_Market_Management.cart.dto.AddToCartRequest;
 import E_Market_Management.cart.dto.CartResponse;
 import E_Market_Management.cart.dto.UpdateCartItemRequest;
 import E_Market_Management.cart.service.CartService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 
 @RestController
@@ -30,6 +31,10 @@ public class CartController {
     }
 
     @GetMapping
+    @Operation(
+        summary = "Lấy giỏ hàng hiện tại",
+        description = "Trả về giỏ hàng của tài khoản đang đăng nhập. Nếu tài khoản chưa có giỏ hàng, hệ thống tạo giỏ hàng mới. Yêu cầu xác thực."
+    )
     public ResponseEntity<CartResponse> getCart(
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
@@ -40,6 +45,10 @@ public class CartController {
     }
 
     @PostMapping("/items")
+    @Operation(
+        summary = "Thêm sản phẩm vào giỏ hàng",
+        description = "Thêm sản phẩm với số lượng yêu cầu vào giỏ hàng của tài khoản đang đăng nhập. Nếu sản phẩm đã có trong giỏ, số lượng được cộng dồn; không thể vượt tồn kho. Yêu cầu xác thực."
+    )
     public ResponseEntity<CartResponse> addToCart(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @Valid @RequestBody AddToCartRequest request
@@ -50,6 +59,10 @@ public class CartController {
     }
 
     @PatchMapping("/items/{itemId}")
+    @Operation(
+        summary = "Cập nhật số lượng sản phẩm trong giỏ",
+        description = "Đặt lại số lượng cho một mục thuộc giỏ hàng của tài khoản đang đăng nhập. Số lượng được kiểm tra với tồn kho; yêu cầu xác thực."
+    )
     public ResponseEntity<CartResponse> updateCartItem(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @PathVariable Long itemId, 
@@ -62,6 +75,10 @@ public class CartController {
     }
 
     @DeleteMapping("/items/{itemId}")
+    @Operation(
+        summary = "Xóa sản phẩm khỏi giỏ hàng",
+        description = "Xóa mục giỏ hàng theo ID nếu mục đó thuộc tài khoản đang đăng nhập. Yêu cầu xác thực."
+    )
     public ResponseEntity<CartResponse> removeItem(
         @AuthenticationPrincipal CustomUserDetails userDetails,
         @PathVariable Long itemId

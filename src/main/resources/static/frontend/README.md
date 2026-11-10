@@ -6,10 +6,10 @@ Frontend nằm trong `src/main/resources/static/frontend` và chỉ gồm HTML, 
 
 - `index.html`: storefront, đăng nhập/đăng ký, giỏ hàng, checkout và lịch sử đơn.
 - `css/styles.css`: toàn bộ giao diện responsive lấy cảm hứng từ Dola Phone.
-- `js/data.js`: dữ liệu demo khi backend chưa trả được sản phẩm.
 - `js/api.js`: lớp gọi API backend, quản lý JWT trong `localStorage`.
-- `js/app.js`: render UI, tìm kiếm/lọc sản phẩm, đồng bộ giỏ, đặt hàng và xem đơn.
-- `assets/product-iphone.svg`: tài sản SVG hiện có; card dùng `imageUrl` từ API hoặc mock CSS khi chưa có ảnh.
+- `js/app.js`: render UI từ dữ liệu backend, tìm kiếm/lọc sản phẩm, đồng bộ giỏ, đặt hàng và xem đơn.
+- Sản phẩm dùng ảnh trong trường `imageUrl`; nếu chưa có ảnh, giao diện báo rõ trạng thái thiếu ảnh.
+- Khi backend không khả dụng, giao diện hiển thị lỗi và nút thử tải lại; không nạp dữ liệu mẫu.
 
 ## API backend đang dùng
 

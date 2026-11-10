@@ -13,8 +13,7 @@
     <header class="site-header" id="home">
         <div class="topbar">
             <div class="shell topbar-inner">
-                <span>Cửa hàng điện thoại và thiết bị công nghệ</span>
-                <span>Miễn phí giao hàng nội thành cho đơn từ 2.000.000đ</span>
+                <span>E-Market · Sản phẩm được quản lý trong hệ thống cửa hàng</span>
             </div>
         </div>
 
@@ -38,14 +37,6 @@
             </form>
 
             <div class="header-actions">
-                <a class="header-link" href="tel:19006750">
-                    <i data-lucide="phone-call"></i>
-                    <span>Hotline<strong>1900 6750</strong></span>
-                </a>
-                <button class="header-link" id="storeButton" type="button" aria-label="Hệ thống cửa hàng">
-                    <i data-lucide="map-pin"></i>
-                    <span>Hệ thống<strong>cửa hàng</strong></span>
-                </button>
                 <button class="header-link" id="orderLookupButton" type="button" aria-label="Tra cứu đơn hàng">
                     <i data-lucide="clipboard-list"></i>
                     <span>Tra cứu<strong>đơn hàng</strong></span>
@@ -66,8 +57,6 @@
                         <button id="myOrdersButton" type="button">Đơn hàng của tôi</button>
                         <button id="adminButton" class="hidden" type="button">Quản trị cửa hàng</button>
                         <button id="logoutButton" type="button">Đăng xuất</button>
-                        <button type="button">Danh sách yêu thích</button>
-                        <button type="button">So sánh sản phẩm</button>
                     </div>
                 </div>
             </div>
@@ -76,17 +65,10 @@
         <nav class="main-nav">
             <div class="shell nav-inner">
                 <a class="active" href="#home">Trang chủ</a>
-                <a href="#about">Giới thiệu</a>
                 <div class="nav-products">
                     <a href="#products">Sản phẩm <i data-lucide="chevron-down"></i></a>
                     <div class="mega-menu" id="megaMenu"></div>
                 </div>
-                <a href="#news">Tin tức</a>
-                <a href="#reviews">Review</a>
-                <a href="#faq">Câu hỏi thường gặp</a>
-                <a href="#warranty">Tra cứu bảo hành</a>
-                <a href="#preorder">Đặt trước</a>
-                <a href="#contact">Liên hệ</a>
             </div>
         </nav>
     </header>
@@ -102,27 +84,20 @@
     <main>
         <section class="hero shell listing-view">
             <div class="hero-copy">
-                <span class="eyebrow">Mua sắm công nghệ dễ dàng</span>
-                <h1>Điện thoại chính hãng, giá tốt mỗi ngày</h1>
-                <p>Khám phá điện thoại, máy tính bảng, máy tính và phụ kiện. Chọn sản phẩm, quản lý giỏ hàng và gửi đơn đặt hàng trực tuyến.</p>
+                <span class="eyebrow">E-Market</span>
+                <h1>Sản phẩm công nghệ</h1>
+                <p>Xem sản phẩm đang có trong hệ thống, kiểm tra tồn kho, đặt hàng và gửi đánh giá sau khi đăng nhập.</p>
                 <div class="hero-actions">
                     <a class="primary-button" href="#products">Xem sản phẩm</a>
                     <button class="ghost-button" id="heroLoginButton" type="button">Đăng nhập / Đăng ký</button>
                 </div>
             </div>
-            <div class="hero-showcase" aria-hidden="true">
-                <span class="phone phone-back"></span>
-                <span class="phone phone-front"></span>
-            </div>
         </section>
 
-        <section class="service-strip shell listing-view" id="services"></section>
         <section class="featured-categories shell panel listing-view" id="categories"></section>
         <section class="products-section shell panel listing-view" id="products"></section>
         <section class="deal-section shell panel listing-view" id="deals"></section>
         <section class="category-sections listing-view" id="categorySections"></section>
-        <section class="content-grid shell listing-view" id="contentGrid"></section>
-        <section class="newsletter shell listing-view" id="newsletter"></section>
         <section class="detail-section shell panel hidden" id="productDetail"></section>
         <section class="admin-view shell hidden" id="adminView" aria-label="Quản trị cửa hàng">
             <div class="admin-hero">
@@ -150,24 +125,13 @@
         </section>
     </main>
 
-    <footer class="site-footer" id="contact"></footer>
+    <footer class="site-footer"></footer>
 
     <div class="floating-actions">
-        <button type="button" id="notifyButton" aria-label="Thông báo"><i data-lucide="bell"></i></button>
         <button type="button" id="scrollTopButton" aria-label="Lên đầu trang"><i data-lucide="arrow-up"></i></button>
-        <button type="button" id="contactButton" aria-label="Liên hệ"><i data-lucide="message-circle"></i></button>
     </div>
 
     <div class="toast hidden" id="toast"></div>
-
-    <div class="modal-backdrop hidden" id="utilityBackdrop"></div>
-    <section class="auth-modal utility-modal hidden" id="utilityModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="utilityTitle">
-        <div class="panel-head">
-            <strong id="utilityTitle"></strong>
-            <button id="closeUtilityModal" type="button" aria-label="Đóng"><i data-lucide="x"></i></button>
-        </div>
-        <div class="utility-content" id="utilityContent"></div>
-    </section>
 
     <div class="drawer-backdrop hidden" id="cartBackdrop"></div>
     <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
@@ -245,7 +209,6 @@
     </section>
 
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="js/data.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>

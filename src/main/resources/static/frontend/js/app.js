@@ -1,9 +1,8 @@
 (function () {
     const guestCartKey = "emarket_guest_cart";
-    const newsletterStorageKey = "emarket_newsletter_emails";
-    let utilityModalOpener = null;
     const state = {
         products: [],
+        categories: [],
         productsPage: 0,
         cart: [],
         filter: "all",
@@ -28,13 +27,10 @@
 
     const $ = (selector) => document.querySelector(selector);
     const nodes = {
-        services: $("#services"),
         categories: $("#categories"),
         products: $("#products"),
         deals: $("#deals"),
         categorySections: $("#categorySections"),
-        contentGrid: $("#contentGrid"),
-        newsletter: $("#newsletter"),
         footer: $(".site-footer"),
         productDetail: $("#productDetail"),
         searchForm: $("#searchForm"),
@@ -80,17 +76,9 @@
         catalogList: $("#catalogList"),
         megaMenu: $("#megaMenu"),
         toast: $("#toast"),
-        utilityModal: $("#utilityModal"),
-        utilityBackdrop: $("#utilityBackdrop"),
-        closeUtilityModal: $("#closeUtilityModal"),
-        utilityTitle: $("#utilityTitle"),
-        utilityContent: $("#utilityContent"),
         scrollTopButton: $("#scrollTopButton"),
         heroLoginButton: $("#heroLoginButton"),
-        storeButton: $("#storeButton"),
-        orderLookupButton: $("#orderLookupButton"),
-        notifyButton: $("#notifyButton"),
-        contactButton: $("#contactButton")
+        orderLookupButton: $("#orderLookupButton")
     };
 
     function icon(name, size = 20) {
@@ -122,111 +110,42 @@
         showToast.timer = window.setTimeout(() => nodes.toast.classList.add("hidden"), 2800);
     }
 
-    function openUtilityModal(title, content) {
-        utilityModalOpener = document.activeElement;
-        nodes.utilityTitle.textContent = title;
-        nodes.utilityContent.innerHTML = content;
-        nodes.utilityBackdrop.classList.remove("hidden");
-        nodes.utilityModal.classList.remove("hidden");
-        nodes.utilityModal.setAttribute("aria-hidden", "false");
-        nodes.closeUtilityModal.focus();
-        refreshIcons();
-    }
-
-    function closeUtilityModal() {
-        nodes.utilityBackdrop.classList.add("hidden");
-        nodes.utilityModal.classList.add("hidden");
-        nodes.utilityModal.setAttribute("aria-hidden", "true");
-        nodes.utilityContent.innerHTML = "";
-        if (utilityModalOpener instanceof HTMLElement) utilityModalOpener.focus();
-        utilityModalOpener = null;
-    }
-
-    function openStores() {
-        const stores = window.demoStores || [];
-        const content = stores.length
-            ? `<p class="utility-note">Địa chỉ tham khảo. Vui lòng gọi hotline để xác nhận giờ hoạt động trước khi đến.</p>
-                <div class="store-list">${stores.map((store) => `
-                    <article class="store-card">
-                        <span class="store-icon">${icon("map-pin", 20)}</span>
-                        <div><strong>${escapeHtml(store.name)}</strong><p>${escapeHtml(store.address)}</p></div>
-                    </article>
-                `).join("")}</div>`
-            : `<p class="empty-state">Chưa có thông tin cửa hàng.</p>`;
-        openUtilityModal("Hệ thống cửa hàng", content);
-    }
-
-    function openNotifications() {
-        openUtilityModal("Thông báo", `
-            <div class="utility-empty">
-                ${icon("bell-ring", 28)}
-                <strong>Bạn chưa có thông báo mới</strong>
-                <p>Thông tin cập nhật đơn hàng sẽ xuất hiện tại đây.</p>
-            </div>
-        `);
-    }
-
     function productVisual(product, compact = false) {
-        const types = ["phone", "tablet", "laptop", "watch", "earbuds", "accessory"];
-        const type = types.includes(product.imageType) ? product.imageType : "phone";
         const label = escapeHtml(product.name || "Sản phẩm công nghệ");
         if (product.imageUrl) {
             return `<div class="product-photo ${compact ? "compact" : ""}"><img class="product-image" src="${escapeHtml(product.imageUrl)}" alt="${label}" loading="lazy"></div>`;
         }
-        const theme = product.theme ? ` style="--mock-bg:${String(product.theme).replaceAll('"', "&quot;")}"` : "";
-        return `<div class="device-mock ${type} ${compact ? "compact" : ""}" role="img" aria-label="${label}"><span${theme}></span></div>`;
+        return `<div class="product-image-placeholder ${compact ? "compact" : ""}" role="img" aria-label="Chưa có hình ảnh cho ${label}">${icon("image", compact ? 24 : 36)}<span>Chưa có hình ảnh</span></div>`;
     }
 
     function productCard(product, compact = false) {
         const disabled = product.stock <= 0;
         return `
             <article class="product-card ${disabled ? "is-out" : ""}">
-                ${product.discount ? `<span class="discount">Giảm ${product.discount}%</span>` : ""}
                 <button class="product-media" type="button" data-detail="${product.id}">${productVisual(product, compact)}</button>
                 <div class="label-row">
-                    ${(product.badges || []).map((badge) => `<span class="mini-label">${escapeHtml(badge)}</span>`).join("")}
                     ${disabled ? `<span class="mini-label muted">Hết hàng</span>` : ""}
                 </div>
                 <button class="product-name" type="button" data-detail="${product.id}">${escapeHtml(product.name)}</button>
                 <div class="price-line">
                     <strong class="price">${formatMoney(product.price)}</strong>
-                    ${product.oldPrice ? `<span class="old-price">${formatMoney(product.oldPrice)}</span>` : ""}
                 </div>
-                    ${product.warranty ? `<div class="warranty">${escapeHtml(product.warranty)}</div>` : ""}
-                    ${product.sold == null ? "" : `<div class="sold-line">${icon("chart-no-axes-column", 15)} Đã bán ${Number(product.sold) || 0}</div>`}
                 <div class="card-actions">
-                    <button class="text-button" type="button">${icon("heart", 16)} Thích</button>
-                    <button class="text-button" type="button">${icon("git-compare-arrows", 16)} So sánh</button>
                     <button class="add-button" type="button" data-add="${product.id}" ${disabled ? "disabled" : ""}>${disabled ? "Hết hàng" : "Thêm giỏ"}</button>
                 </div>
             </article>
         `;
     }
 
-    function categoryType(name) {
-        const value = name.toLowerCase();
-        if (value.includes("ipad") || value.includes("tablet")) return "tablet";
-        if (value.includes("mac") || value.includes("laptop")) return "laptop";
-        if (value.includes("watch")) return "watch";
-        if (value.includes("airpod") || value.includes("earbud")) return "earbuds";
-        if (value.includes("phụ kiện") || value.includes("accessory")) return "accessory";
-        return "phone";
-    }
-
     function renderCategories() {
-        const categories = [...new Set(state.products.map((product) => product.category?.name).filter(Boolean))];
         nodes.categories.innerHTML = `
             <div class="section-title"><span></span><h2>Danh mục sản phẩm</h2><a href="#products">Xem tất cả</a></div>
-            ${categories.length ? `<div class="category-grid">
-                ${categories.map((name) => {
-                    const count = state.products.filter((product) => product.category?.name === name).length;
-                    const preset = window.demoCategories.find((category) => category.name === name);
-                    return `<article class="category-card" data-category="${escapeHtml(name)}">
-                        <div class="category-visuals">
-                            <div class="category-tile">${productVisual({ name, imageType: preset?.type || categoryType(name), theme: preset?.theme }, true)}</div>
-                            <div class="category-tile dim">${productVisual({ name, imageType: preset?.type || categoryType(name), theme: preset?.theme }, true)}<strong>${count}</strong></div>
-                        </div>
-                        <div class="category-info"><strong>${escapeHtml(name)}</strong><span>${count} sản phẩm</span></div>
+            ${state.categories.length ? `<div class="category-grid">
+                ${state.categories.map((category) => {
+                    const count = state.products.filter((product) => product.category?.id === category.id).length;
+                    return `<article class="category-card" data-category="${escapeHtml(category.name)}">
+                        <div class="category-icon">${icon("tag", 28)}</div>
+                        <div class="category-info"><strong>${escapeHtml(category.name)}</strong><span>${count} sản phẩm</span></div>
                     </article>`;
                 }).join("")}
             </div>` : `<p class="empty-state">Chưa có danh mục sản phẩm.</p>`}
@@ -234,25 +153,20 @@
         refreshIcons();
     }
 
-    function renderLayout() {
-        nodes.services.innerHTML = window.demoServices.map((item) => `
-            <article>${icon(item.icon, 26)}<div><strong>${item.title}</strong><span>${item.text}</span></div></article>
-        `).join("");
+    function renderCategoryMenus() {
+        const categories = state.categories;
+        nodes.megaMenu.innerHTML = categories.length
+            ? categories.map((category) => `<div><strong>${escapeHtml(category.name)}</strong><button type="button" data-menu-search="${escapeHtml(category.name)}">Xem sản phẩm</button></div>`).join("")
+            : `<p class="empty-state">Chưa có danh mục.</p>`;
+        nodes.catalogList.innerHTML = categories.length
+            ? categories.map((category) => `<button class="catalog-item" type="button" data-menu-search="${escapeHtml(category.name)}"><span>${escapeHtml(category.name)}</span>${icon("chevron-right", 18)}</button>`).join("")
+            : `<p class="empty-state">Chưa có danh mục.</p>`;
+        refreshIcons();
+    }
 
-        nodes.categories.innerHTML = `
-            <div class="section-title"><span></span><h2>Danh mục nổi bật</h2><a href="#products">Xem tất cả</a></div>
-            <div class="category-grid">
-                ${window.demoCategories.map((category) => `
-                    <article class="category-card" data-category="${category.id}">
-                        <div class="category-visuals">
-                            <div class="category-tile">${productVisual({ ...category, imageType: category.type }, true)}</div>
-                            <div class="category-tile dim">${productVisual({ ...category, imageType: category.type }, true)}<strong>+${category.count}</strong></div>
-                        </div>
-                        <div class="category-info"><strong>${category.name}</strong><span>${category.subtitle}</span></div>
-                    </article>
-                `).join("")}
-            </div>
-        `;
+    function renderLayout() {
+        renderCategories();
+        renderCategoryMenus();
 
         nodes.products.innerHTML = `
             <div class="tabs" id="productTabs">
@@ -265,18 +179,8 @@
             <nav class="product-pagination hidden" id="productPagination" aria-label="Phân trang sản phẩm"></nav>
         `;
 
-        nodes.megaMenu.innerHTML = window.demoMenu.map((group) => `
-            <div><strong>${group.name}</strong>${group.children.map((child) => `<button type="button" data-menu-search="${child}">${child}</button>`).join("")}</div>
-        `).join("");
-
-        nodes.catalogList.innerHTML = window.demoMenu.map((group) => `
-            <button class="catalog-item" type="button" data-menu-search="${group.name}"><span>${group.name}</span>${icon("chevron-right", 18)}</button>
-            ${group.children.map((child) => `<button class="catalog-subitem" type="button" data-menu-search="${child}">${child}</button>`).join("")}
-        `).join("");
-
         renderDeal();
         renderCategorySections();
-        renderContent();
         renderFooter();
         refreshIcons();
     }
@@ -303,7 +207,7 @@
 
         grid.innerHTML = pageProducts.length
             ? pageProducts.map((product) => productCard(product)).join("")
-            : `<div class="empty-state">Không tìm thấy sản phẩm phù hợp.</div>`;
+            : `<div class="empty-state">${state.products.length ? "Không tìm thấy sản phẩm phù hợp." : "Chưa có sản phẩm để hiển thị."}</div>`;
 
         if (pageCount > 1) {
             const firstProduct = state.productsPage * pageSize + 1;
@@ -326,13 +230,18 @@
 
     function renderDeal() {
         const dealProducts = state.products.filter((product) => product.stock > 0).slice(0, 4);
+        nodes.deals.classList.toggle("hidden", !dealProducts.length);
+        if (!dealProducts.length) {
+            nodes.deals.innerHTML = "";
+            return;
+        }
         nodes.deals.innerHTML = `
             <div class="deal-copy">
                 <span>Sản phẩm đang có hàng</span>
                 <h2>Chọn thiết bị phù hợp với bạn</h2>
                 <p>Danh sách sản phẩm được cập nhật từ cửa hàng.</p>
             </div>
-            <div class="deal-grid">${dealProducts.length ? dealProducts.map((product) => productCard(product, true)).join("") : `<p class="empty-state">Hiện chưa có sản phẩm.</p>`}</div>
+            <div class="deal-grid">${dealProducts.map((product) => productCard(product, true)).join("")}</div>
         `;
         refreshIcons();
     }
@@ -342,54 +251,25 @@
         nodes.categorySections.innerHTML = groups.map((name) => {
             const products = state.products.filter((product) => product.category?.name === name).slice(0, 5);
             if (!products.length) return "";
+            const safeName = escapeHtml(name);
             return `
                 <section class="shell panel category-product-section">
-                    <div class="section-title"><span></span><h2>${name}</h2><a href="#products" data-menu-search="${name}">Xem toàn bộ</a></div>
+                    <div class="section-title"><span></span><h2>${safeName}</h2><a href="#products" data-menu-search="${safeName}">Xem toàn bộ</a></div>
                     <div class="product-grid small-grid">${products.map((product) => productCard(product, true)).join("")}</div>
                 </section>
             `;
         }).join("");
     }
 
-    function renderContent() {
-        nodes.contentGrid.innerHTML = `
-            <section class="panel news-section" id="news">
-                <div class="section-title"><span></span><h2>Tin tức</h2></div>
-                ${window.demoNews.map((item) => `
-                    <article class="news-item"><small>${item.tag} · ${item.date}</small><strong>${item.title}</strong><a href="#news">Đọc tiếp</a></article>
-                `).join("")}
-            </section>
-            <section class="panel review-section" id="reviews">
-                <div class="section-title"><span></span><h2>Review</h2></div>
-                <div class="video-box"><strong>Xem đánh giá của từng sản phẩm</strong><span>Mở trang chi tiết sản phẩm để đọc và gửi đánh giá.</span></div>
-            </section>
-            <section class="panel feedback-section">
-                <div class="section-title"><span></span><h2>Hỗ trợ khách hàng</h2></div>
-                <blockquote>Đội ngũ E-Market hỗ trợ bạn tìm thiết bị phù hợp với nhu cầu và ngân sách.</blockquote>
-                <strong>Tư vấn E-Market</strong><span>Hỗ trợ sản phẩm</span>
-            </section>
-        `;
-
-        nodes.newsletter.innerHTML = `
-            <div><strong>Nhận tin khuyến mãi</strong><span>Cập nhật deal điện thoại, tablet và phụ kiện mới nhất.</span></div>
-            <form id="newsletterForm">
-                <label class="visually-hidden" for="newsletterEmail">Email của bạn</label>
-                <input id="newsletterEmail" name="email" type="email" placeholder="Email của bạn" autocomplete="email" required>
-                <button class="primary-button" type="submit">Đăng ký</button>
-                <small class="newsletter-status" id="newsletterStatus" role="status" aria-live="polite">Bản demo lưu đăng ký trên trình duyệt này.</small>
-            </form>
-        `;
-    }
-
     function renderFooter() {
         nodes.footer.innerHTML = `
             <div class="shell footer-grid">
-                <div><strong>E-Market Phone</strong><p>Cửa hàng điện thoại và thiết bị công nghệ.</p></div>
-                <div><strong>Hỗ trợ</strong><a href="#warranty">Tra cứu bảo hành</a><a href="#faq">Câu hỏi thường gặp</a><a href="#contact">Liên hệ</a></div>
-                <div><strong>Danh mục</strong><a href="#products">iPhone</a><a href="#products">iPad</a><a href="#products">Mac</a><a href="#products">Phụ kiện</a></div>
-                <div><strong>Hotline</strong><p>1900 6750<br>support@emarket.demo</p></div>
+                <div><strong>E-Market</strong><p>Sản phẩm được tải từ hệ thống cửa hàng.</p></div>
+                <div><strong>Sản phẩm</strong><a href="#products">Tất cả sản phẩm</a><a href="#categories">Danh mục</a></div>
+                <div><strong>Danh mục</strong>${state.categories.map((category) => `<a href="#products" data-menu-search="${escapeHtml(category.name)}">${escapeHtml(category.name)}</a>`).join("")}</div>
             </div>
         `;
+        refreshIcons();
     }
 
     function setView(view) {
@@ -410,17 +290,15 @@
             <div class="detail-grid">
                 <div class="detail-gallery">
                     <div class="detail-main-visual">${productVisual(product)}</div>
-                    <div class="thumbs">${[0, 1, 2, 3].map(() => `<button type="button">${productVisual(product, true)}</button>`).join("")}</div>
                 </div>
                 <div class="detail-buy">
                     <h1>${escapeHtml(product.name)}</h1>
                     <div class="detail-meta">
-                        <span>Loại: <strong>${escapeHtml(product.category?.name)}</strong></span>
-                        <span>Thương hiệu: <strong>${escapeHtml(product.brand?.name)}</strong></span>
+                        <span>Loại: <strong>${escapeHtml(product.category?.name || "")}</strong></span>
+                        <span>Thương hiệu: <strong>${escapeHtml(product.brand?.name || "")}</strong></span>
                         <span>Tình trạng: <strong>${product.stock > 0 ? "Còn hàng" : "Hết hàng"}</strong></span>
                     </div>
-                    <div class="detail-price"><span>${formatMoney(product.price)}</span>${product.oldPrice ? `<small>${formatMoney(product.oldPrice)}</small>` : ""}</div>
-                    ${product.warranty ? `<p class="warranty">${escapeHtml(product.warranty)}</p>` : ""}
+                    <div class="detail-price"><span>${formatMoney(product.price)}</span></div>
                     <div class="quantity-control">
                         <button type="button" data-qty="-1">-</button><input id="detailQuantity" value="1" readonly><button type="button" data-qty="1">+</button>
                     </div>
@@ -1186,6 +1064,9 @@
             const category = event.target.closest("[data-category]");
             const authOpen = event.target.closest("[data-auth-open]");
             const buyNow = event.target.closest("[data-buy-now]");
+            const retryProducts = event.target.closest("[data-retry-products]");
+
+            if (retryProducts) void loadProducts();
 
             if (filter) {
                 state.filter = filter.dataset.filter;
@@ -1267,27 +1148,6 @@
             event.preventDefault();
             runSearch(nodes.searchInput.value);
         });
-        nodes.newsletter.addEventListener("submit", (event) => {
-            if (!event.target.matches("#newsletterForm")) return;
-            event.preventDefault();
-
-            const email = new FormData(event.target).get("email").trim().toLowerCase();
-            const status = $("#newsletterStatus");
-            try {
-                const storedValue = JSON.parse(localStorage.getItem(newsletterStorageKey) || "[]");
-                const savedEmails = Array.isArray(storedValue) ? storedValue : [];
-                if (savedEmails.includes(email)) {
-                    status.textContent = "Email này đã được ghi nhận trên trình duyệt này.";
-                    return;
-                }
-                savedEmails.push(email);
-                localStorage.setItem(newsletterStorageKey, JSON.stringify(savedEmails));
-                status.textContent = "Đã lưu trên trình duyệt này; chưa gửi tới máy chủ.";
-                event.target.reset();
-            } catch (error) {
-                status.textContent = "Trình duyệt không cho phép lưu đăng ký trên thiết bị này.";
-            }
-        });
         nodes.cartButton.addEventListener("click", openCart);
         nodes.closeCart.addEventListener("click", closeCart);
         nodes.cartBackdrop.addEventListener("click", closeCart);
@@ -1320,15 +1180,7 @@
         nodes.catalogToggle.addEventListener("click", () => nodes.catalogPanel.classList.add("open"));
         nodes.closeCatalog.addEventListener("click", () => nodes.catalogPanel.classList.remove("open"));
         nodes.scrollTopButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-        nodes.storeButton.addEventListener("click", openStores);
         nodes.orderLookupButton.addEventListener("click", showMyOrders);
-        nodes.notifyButton.addEventListener("click", openNotifications);
-        nodes.closeUtilityModal.addEventListener("click", closeUtilityModal);
-        nodes.utilityBackdrop.addEventListener("click", closeUtilityModal);
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "Escape" && !nodes.utilityModal.classList.contains("hidden")) closeUtilityModal();
-        });
-        nodes.contactButton.addEventListener("click", () => window.location.assign("tel:19006750"));
         nodes.adminButton.addEventListener("click", openAdmin);
         nodes.backToStore.addEventListener("click", () => {
             setView("listing");
@@ -1395,14 +1247,24 @@
 
     async function loadProducts() {
         const status = $("#dataStatus");
+        status.textContent = "Đang tải sản phẩm...";
         try {
             state.products = await window.emarketApi.getProducts();
-            status.textContent = "Đang hiển thị dữ liệu từ backend.";
+            status.textContent = state.products.length ? "" : "Chưa có sản phẩm trong hệ thống.";
         } catch (error) {
-            state.products = window.demoProducts;
-            status.textContent = "Backend chưa sẵn sàng hoặc chưa có dữ liệu, đang hiển thị dữ liệu demo.";
+            state.products = [];
+            status.innerHTML = `Không thể tải sản phẩm: ${escapeHtml(error.message)} <button class="admin-inline-button" type="button" data-retry-products>Thử lại</button>`;
+        }
+        try {
+            state.categories = await window.emarketApi.getCategories();
+        } catch (error) {
+            state.categories = [...new Map(state.products
+                .filter((product) => product.category?.id != null)
+                .map((product) => [product.category.id, product.category])).values()];
         }
         renderCategories();
+        renderCategoryMenus();
+        renderFooter();
         renderProducts();
         renderDeal();
         renderCategorySections();

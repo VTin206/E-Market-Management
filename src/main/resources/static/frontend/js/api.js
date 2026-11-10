@@ -67,26 +67,11 @@
             name: product.name,
             description: product.description,
             price: Number(product.price || 0),
-            oldPrice: product.oldPrice == null ? null : Number(product.oldPrice),
-            discount: product.discount == null ? null : Number(product.discount),
             stock: product.stock,
             imageUrl: product.imageUrl,
-            imageType: product.imageType || pickType(product.category?.name),
-            theme: product.theme || "linear-gradient(145deg, #e5ded3, #111)",
-            category: product.category || { name: "Sản phẩm" },
-            brand: product.brand || { name: "" },
-            badges: product.badges || [],
-            flags: product.flags || [],
-            warranty: product.warranty || product.description || ""
+            category: product.category || null,
+            brand: product.brand || null
         };
-    }
-
-    function pickType(categoryName = "") {
-        const value = categoryName.toLowerCase();
-        if (value.includes("ipad")) return "tablet";
-        if (value.includes("mac")) return "laptop";
-        if (value.includes("watch")) return "watch";
-        return "phone";
     }
 
     function normalizeCart(cart) {

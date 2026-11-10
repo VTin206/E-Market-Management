@@ -3,6 +3,7 @@ package E_Market_Management.order.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +19,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import E_Market_Management.auth.security.CustomUserDetails;
+import E_Market_Management.membership.entity.Membership;
+import E_Market_Management.membership.entity.MembershipTier;
+import E_Market_Management.membership.repository.MembershipRepository;
 import E_Market_Management.order.dto.OrderResponse;
 import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
@@ -30,6 +34,7 @@ import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
+import E_Market_Management.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
@@ -41,6 +46,12 @@ public class OrderServiceTest {
 
     @Mock 
     private OrderItemRepository orderItemRepository;
+
+    @Mock
+    private MembershipRepository membershipRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks 
     private OrderService orderService;
@@ -147,5 +158,33 @@ public class OrderServiceTest {
 
         assertThrows(ConflictException.class, () -> orderService.updateStatus(request, 5L));
         assertEquals(STATUS.PENDING, order.getStatus());
+    }
+
+    @Test
+    public void updateStatus_whenOrderCompletes_awardsPointsAndUpdatesTierOnce() {
+        User user = User.builder().points(0).build();
+        List<OrderItem> items = List.of();
+        Order order = Order.builder()
+            .id(8L)
+            .user(user)
+            .totalAmount(new BigDecimal("5000000"))
+            .status(STATUS.PROCESSING)
+            .orderItems(items)
+            .build();
+        Membership silverMembership = mock(Membership.class);
+        UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
+        request.setStatus(STATUS.COMPLETED);
+
+        when(orderRepository.findById(8L)).thenReturn(Optional.of(order));
+        when(membershipRepository.findByTier(MembershipTier.SILVER))
+            .thenReturn(Optional.of(silverMembership));
+
+        orderService.updateStatus(request, 8L);
+        orderService.updateStatus(request, 8L);
+
+        assertEquals(500, user.getPoints());
+        assertSame(silverMembership, user.getMembership());
+        verify(membershipRepository).findByTier(MembershipTier.SILVER);
+        verify(userRepository).save(user);
     }
 }

@@ -12,6 +12,8 @@ import E_Market_Management.auth.dto.RegisterRequest;
 import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.auth.security.CustomUserDetailsService;
 import E_Market_Management.auth.security.JwtService;
+import E_Market_Management.membership.entity.MembershipTier;
+import E_Market_Management.membership.repository.MembershipRepository;
 import E_Market_Management.shared.exception.ConflictException;
 import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
@@ -21,13 +23,15 @@ import E_Market_Management.user.repository.UserRepository;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, CustomUserDetailsService userDetailsService) {
+    public AuthService(UserRepository userRepository, MembershipRepository membershipRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager, CustomUserDetailsService userDetailsService) {
         this.userRepository = userRepository;
+        this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -52,6 +56,8 @@ public class AuthService {
             .phone(request.getPhone())
             .role(ROLE.CUSTOMER)
             .points(0)
+            .membership(membershipRepository.findByTier(MembershipTier.MEMBER)
+                .orElseThrow(() -> new IllegalStateException("Thiếu hạng thành viên mặc định")))
             .build();
         
         User savedUser = userRepository.save(user);

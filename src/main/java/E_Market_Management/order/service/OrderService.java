@@ -2,6 +2,9 @@ package E_Market_Management.order.service;
 
 import E_Market_Management.cart.repository.CartItemRepository;
 import E_Market_Management.cart.repository.CartRepository;
+import E_Market_Management.membership.entity.Membership;
+import E_Market_Management.membership.entity.MembershipTier;
+import E_Market_Management.membership.repository.MembershipRepository;
 import E_Market_Management.order.mapper.OrderMapper;
 import E_Market_Management.order.repository.OrderItemRepository;
 import java.math.BigDecimal;
@@ -44,6 +47,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final MembershipRepository membershipRepository;
 
     public OrderService(
         OrderRepository orderRepository, 
@@ -52,7 +56,9 @@ public class OrderService {
         OrderItemRepository orderItemRepository, 
         OrderMapper orderMapper, 
         CartRepository cartRepository,
-        CartItemRepository cartItemRepository) {
+        CartItemRepository cartItemRepository,
+        MembershipRepository membershipRepository
+    ) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
@@ -60,6 +66,40 @@ public class OrderService {
         this.orderMapper = orderMapper;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
+        this.membershipRepository = membershipRepository;
+    }
+
+
+    private void updateMembership(User user, int updatedPoint) {
+        MembershipTier updatedTier = MembershipTier.MEMBER;
+
+        for(MembershipTier tier : MembershipTier.values()) {
+            if(updatedPoint >= tier.getRequiredPoints()) {
+                updatedTier = tier;
+            }
+        }
+
+        Membership membership = membershipRepository.findByTier(updatedTier)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng thành viên"));
+
+        user.setMembership(membership);
+    }
+
+    private void awardPoint(Order order) {
+        User user = order.getUser();
+        if(user == null) return;
+
+        int earnedPoint = order.getTotalAmount()
+            .divideToIntegralValue(BigDecimal.valueOf(10_000))
+            .intValueExact();
+
+        int currentPoint = user.getPoints() == null ? 0 : user.getPoints();
+        int updatedPoint = currentPoint + earnedPoint;
+
+        user.setPoints(updatedPoint);
+
+        updateMembership(user, updatedPoint);
+        userRepository.save(user);
     }
 
     @Transactional 
@@ -109,7 +149,7 @@ public class OrderService {
             .createdAt(LocalDateTime.now())
             .totalAmount(BigDecimal.ZERO)
             .build();
-        
+
         order = orderRepository.save(order);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -175,7 +215,7 @@ public class OrderService {
                 return orderMapper.toResponse(order, orderItem);
             })
             .toList();
-        
+
         return responses;
     }
 
@@ -183,15 +223,24 @@ public class OrderService {
     public OrderResponse updateStatus(UpdateOrderStatusRequest request, Long orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
-        
-        STATUS requestedStatus = request.getStatus();
-        if (!order.getStatus().canTransitionTo(requestedStatus)) {
+
+        STATUS currentStatus = order.getStatus();
+        STATUS nextStatus = request.getStatus();
+
+        if (!order.getStatus().canTransitionTo(nextStatus)) {
             throw new ConflictException(
-                "Không thể chuyển trạng thái đơn hàng từ " + order.getStatus() + " sang " + requestedStatus
+                "Không thể chuyển trạng thái đơn hàng từ " + order.getStatus() + " sang " + nextStatus
             );
         }
 
-        order.setStatus(requestedStatus);
+        boolean justCompleted = currentStatus != STATUS.COMPLETED && nextStatus == STATUS.COMPLETED;
+
+        order.setStatus(nextStatus);
+
+        if(justCompleted) {
+            awardPoint(order);
+        }
+
         orderRepository.save(order);
         return orderMapper.toResponse(order, order.getOrderItems());
     }
@@ -200,7 +249,7 @@ public class OrderService {
     public OrderResponse getCurrentOrder(Long orderId, CustomUserDetails userDetails) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
-        
+
         Long userId = userDetails.getId();
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
 

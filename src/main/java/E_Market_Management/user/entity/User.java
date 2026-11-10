@@ -48,7 +48,7 @@ public class User {
     private Integer points;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "membership_id")
+    @JoinColumn(name = "membership_id", nullable = false)
     private Membership membership;
 
     @OneToOne(mappedBy = "user")

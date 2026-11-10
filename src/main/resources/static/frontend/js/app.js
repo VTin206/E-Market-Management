@@ -838,23 +838,14 @@
             + (cards ? '<div class="admin-entity-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có thương hiệu</strong><p>Thêm thương hiệu trước khi tạo sản phẩm.</p></div>');
     }
 
-    function renderAdminMembershipForm() {
-        return '<form class="admin-form admin-compact-form" id="adminMembershipForm"><div class="admin-form-title"><strong>Tạo hạng thành viên</strong></div>'
-            + '<div class="admin-form-grid"><label>Tên hạng<input name="name" required maxlength="100" placeholder="Ví dụ: Silver"></label>'
-            + '<label>Điểm yêu cầu<input name="requiredPoints" type="number" min="0" step="1" required value="0"></label>'
-            + '<label>Ưu đãi (%)<input name="discountPercent" type="number" min="0" max="100" step="1" required value="0"></label></div>'
-            + '<div class="admin-form-actions"><button class="primary-button" type="submit">Tạo hạng</button></div></form>';
-    }
-
     function renderAdminMemberships() {
         const cards = state.admin.memberships.map((membership) =>
             '<article class="admin-membership-card"><span class="admin-membership-icon">' + icon("award", 22) + '</span><div><span class="admin-id">HẠNG #' + escapeHtml(membership.id)
             + '</span><h3>' + escapeHtml(membership.name) + '</h3><p>' + Number(membership.requiredPoints || 0) + ' điểm để đạt hạng này</p></div>'
             + '<strong>' + Number(membership.discountPercent || 0) + '%<small> ưu đãi</small></strong></article>'
         ).join("");
-        return adminHeading("Hạng thành viên", "Thiết lập mức điểm và phần trăm ưu đãi cho từng hạng.", "", "")
-            + renderAdminMembershipForm()
-            + (cards ? '<div class="admin-membership-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có hạng thành viên</strong><p>Các hạng đã tạo sẽ xuất hiện ở đây.</p></div>');
+        return adminHeading("Hạng thành viên", "Các hạng và mức điểm được quy định cố định trong hệ thống.", "", "")
+            + (cards ? '<div class="admin-membership-list">' + cards + '</div>' : '<div class="admin-message"><strong>Không tải được hạng thành viên</strong><p>Hãy kiểm tra kết nối rồi tải lại trang.</p></div>');
     }
 
     async function loadAdminData() {
@@ -937,13 +928,6 @@
                     await window.emarketApi.createBrand(payload);
                     showToast("Đã tạo thương hiệu.");
                 }
-            } else if (form.id === "adminMembershipForm") {
-                await window.emarketApi.createMembership({
-                    name: values.name.trim(),
-                    requiredPoints: Number(values.requiredPoints),
-                    discountPercent: Number(values.discountPercent)
-                });
-                showToast("Đã tạo hạng thành viên.");
             }
             state.adminEditing = null;
             await loadAdminData();

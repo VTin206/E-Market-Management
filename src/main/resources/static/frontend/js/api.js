@@ -234,12 +234,6 @@
         async getMemberships() {
             return request("/api/membership");
         },
-        async createMembership(payload) {
-            return request("/api/membership", {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-        },
         async getReviews(productId) {
             return request(`/api/reviews?productId=${encodeURIComponent(productId)}`);
         },

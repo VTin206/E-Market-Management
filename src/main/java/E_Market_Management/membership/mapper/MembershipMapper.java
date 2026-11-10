@@ -7,13 +7,12 @@ import E_Market_Management.membership.entity.Membership;
 
 @Component 
 public class MembershipMapper {
-    public MembershipResponse toResponse (Membership membership) {
-        MembershipResponse response = MembershipResponse.builder()
+    public MembershipResponse toResponse(Membership membership) {
+        return MembershipResponse.builder()
             .id(membership.getId())
             .name(membership.getName())
             .discountPercent(membership.getDiscountPercent())
             .requiredPoints(membership.getRequiredPoints())
             .build();
-        return response;
     }
 }

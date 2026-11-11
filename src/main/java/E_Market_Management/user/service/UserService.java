@@ -1,6 +1,9 @@
 package E_Market_Management.user.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import E_Market_Management.shared.exception.ResourceNotFoundException;
@@ -30,6 +33,18 @@ public class UserService {
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin, vui lòng đăng nhập"));
 
         return userMapper.toResponse(user);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> getUsers(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page không được nhỏ hơn 0");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Size phải nằm trong khoảng từ 1 đến 100");
+        }
+        return userRepository.findAll(PageRequest.of(page, size, Sort.by("id").ascending()))
+            .map(userMapper::toResponse);
     }
 
     @Transactional

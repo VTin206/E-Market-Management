@@ -3,9 +3,14 @@
     const state = {
         products: [],
         categories: [],
+        brands: [],
         productsPage: 0,
         cart: [],
         filter: "all",
+        categoryFilter: "",
+        brandFilter: "",
+        priceFilter: "all",
+        sortFilter: "default",
         query: "",
         selectedProduct: null,
         reviewItems: [],
@@ -13,6 +18,8 @@
         quantity: 1,
         submittingOrder: false,
         view: "listing",
+        profile: null,
+        profileSaving: false,
         adminTab: "orders",
         adminEditing: null,
         admin: {
@@ -21,6 +28,8 @@
             categories: [],
             brands: [],
             memberships: [],
+            users: null,
+            usersPage: 0,
             error: ""
         }
     };
@@ -31,15 +40,31 @@
         products: $("#products"),
         deals: $("#deals"),
         categorySections: $("#categorySections"),
-        footer: $(".site-footer"),
         productDetail: $("#productDetail"),
         searchForm: $("#searchForm"),
         searchInput: $("#searchInput"),
+        searchClearButton: $("#searchClearButton"),
+        productTotalCount: $("#productTotalCount"),
+        productTabs: $("#productTabs"),
+        filterCategory: $("#filterCategory"),
+        filterBrand: $("#filterBrand"),
+        filterPrice: $("#filterPrice"),
+        filterSort: $("#filterSort"),
+        resetFilterBtn: $("#resetFilterBtn"),
+        activeFilterChips: $("#activeFilterChips"),
+        dataStatus: $("#dataStatus"),
+        productGrid: $("#productGrid"),
+        productPagination: $("#productPagination"),
         cartButton: $("#cartButton"),
         cartDrawer: $("#cartDrawer"),
         cartBackdrop: $("#cartBackdrop"),
         closeCart: $("#closeCart"),
         cartItems: $("#cartItems"),
+        cartSubtotal: $("#cartSubtotal"),
+        cartTotal: $("#cartTotal"),
+        cartTitle: $("#cartTitle"),
+        cartCount: $("#cartCount"),
+        headerCartTotal: $("#headerCartTotal"),
         checkoutButton: $("#checkoutButton"),
         checkoutModal: $("#checkoutModal"),
         checkoutBackdrop: $("#checkoutBackdrop"),
@@ -47,11 +72,36 @@
         checkoutForm: $("#checkoutForm"),
         checkoutTotal: $("#checkoutTotal"),
         placeOrderButton: $("#placeOrderButton"),
-        cartTotal: $("#cartTotal"),
-        cartTitle: $("#cartTitle"),
-        cartCount: $("#cartCount"),
         accountButton: $("#accountButton"),
         accountLabel: $("#accountLabel"),
+        accountSubLabel: $("#accountSubLabel"),
+        accountAvatarWrap: $("#accountAvatarWrap"),
+        dropdownUserHeader: $("#dropdownUserHeader"),
+        dropdownUserName: $("#dropdownUserName"),
+        dropdownUserRole: $("#dropdownUserRole"),
+        myProfileButton: $("#myProfileButton"),
+        profileView: $("#profileView"),
+        profileLoadState: $("#profileLoadState"),
+        profileLoadMessage: $("#profileLoadMessage"),
+        profileRetryButton: $("#profileRetryButton"),
+        profileContent: $("#profileContent"),
+        profileTitle: $("#profileTitle"),
+        profileAvatar: $("#profileAvatar"),
+        profileUserName: $("#profileUserName"),
+        profileRole: $("#profileRole"),
+        profilePoints: $("#profilePoints"),
+        profileMembership: $("#profileMembership"),
+        profileMembershipDetails: $("#profileMembershipDetails"),
+        profileForm: $("#profileForm"),
+        profileFullNameInput: $("#profileFullNameInput"),
+        profileUserNameInput: $("#profileUserNameInput"),
+        profileEmailInput: $("#profileEmailInput"),
+        profilePhoneInput: $("#profilePhoneInput"),
+        profileFeedback: $("#profileFeedback"),
+        profileSaveButton: $("#profileSaveButton"),
+        profileResetButton: $("#profileResetButton"),
+        profileBackButton: $("#profileBackButton"),
+        profileOrdersPreview: $("#profileOrdersPreview"),
         adminButton: $("#adminButton"),
         adminView: $("#adminView"),
         adminSummary: $("#adminSummary"),
@@ -75,13 +125,20 @@
         closeCatalog: $("#closeCatalog"),
         catalogList: $("#catalogList"),
         megaMenu: $("#megaMenu"),
+        navQuickCategories: $("#navQuickCategories"),
         toast: $("#toast"),
         scrollTopButton: $("#scrollTopButton"),
         heroLoginButton: $("#heroLoginButton"),
-        orderLookupButton: $("#orderLookupButton")
+        orderLookupButton: $("#orderLookupButton"),
+        mobNavHome: $("#mobNavHome"),
+        mobNavCatalog: $("#mobNavCatalog"),
+        mobNavSearch: $("#mobNavSearch"),
+        mobNavCart: $("#mobNavCart"),
+        mobNavAccount: $("#mobNavAccount"),
+        mobCartCount: $("#mobCartCount")
     };
 
-    function icon(name, size = 20) {
+    function icon(name, size = 18) {
         return `<i data-lucide="${name}" style="width:${size}px;height:${size}px"></i>`;
     }
 
@@ -103,121 +160,311 @@
         return new Intl.NumberFormat("vi-VN").format(value) + "đ";
     }
 
-    function showToast(message) {
-        nodes.toast.textContent = message;
+    function showToast(message, type = "info") {
+        if (!nodes.toast) return;
+        const iconName = type === "success" ? "check-circle-2" : type === "error" ? "alert-circle" : "info";
+        nodes.toast.innerHTML = `<div class="toast-inner">${icon(iconName, 20)}<span>${escapeHtml(message)}</span></div>`;
+        nodes.toast.className = `toast toast-${type}`;
         nodes.toast.classList.remove("hidden");
         window.clearTimeout(showToast.timer);
-        showToast.timer = window.setTimeout(() => nodes.toast.classList.add("hidden"), 2800);
+        showToast.timer = window.setTimeout(() => {
+            nodes.toast.classList.add("hidden");
+        }, 3200);
+        refreshIcons();
     }
 
     function productVisual(product, compact = false) {
         const label = escapeHtml(product.name || "Sản phẩm công nghệ");
         if (product.imageUrl) {
-            return `<div class="product-photo ${compact ? "compact" : ""}"><img class="product-image" src="${escapeHtml(product.imageUrl)}" alt="${label}" loading="lazy"></div>`;
+            return `
+                <div class="product-photo ${compact ? "compact" : ""}">
+                    <img class="product-image" src="${escapeHtml(product.imageUrl)}" alt="${label}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder ${compact ? "compact" : ""}\\'>${icon("image", compact ? 22 : 32)}<span>Chưa có hình ảnh</span></div>';refreshIcons();">
+                </div>
+            `;
         }
-        return `<div class="product-image-placeholder ${compact ? "compact" : ""}" role="img" aria-label="Chưa có hình ảnh cho ${label}">${icon("image", compact ? 24 : 36)}<span>Chưa có hình ảnh</span></div>`;
+        return `
+            <div class="product-image-placeholder ${compact ? "compact" : ""}" role="img" aria-label="Chưa có hình ảnh cho ${label}">
+                ${icon("image", compact ? 22 : 34)}
+                <span>Chưa có hình ảnh</span>
+            </div>
+        `;
     }
 
     function productCard(product, compact = false) {
         const disabled = product.stock <= 0;
+        const isLowStock = !disabled && product.stock <= 5;
+        const brandName = product.brand?.name ? escapeHtml(product.brand.name) : "";
+        const catName = product.category?.name ? escapeHtml(product.category.name) : "";
+        const tagText = brandName || catName || "Chính hãng VN/A";
+
         return `
-            <article class="product-card ${disabled ? "is-out" : ""}">
-                <button class="product-media" type="button" data-detail="${product.id}">${productVisual(product, compact)}</button>
-                <div class="label-row">
-                    ${disabled ? `<span class="mini-label muted">Hết hàng</span>` : ""}
+            <article class="product-card ${disabled ? "is-out" : ""}" data-card-id="${product.id}">
+                <div class="card-badge-row">
+                    <span class="card-tag brand-tag">${tagText}</span>
+                    ${disabled ? `<span class="card-tag out-tag">Hết hàng</span>` : isLowStock ? `<span class="card-tag low-tag">Chỉ còn ${product.stock}</span>` : `<span class="card-tag hot-tag"><i data-lucide="sparkles"></i> Mới</span>`}
                 </div>
-                <button class="product-name" type="button" data-detail="${product.id}">${escapeHtml(product.name)}</button>
-                <div class="price-line">
-                    <strong class="price">${formatMoney(product.price)}</strong>
+                <button class="product-media" type="button" data-detail="${product.id}" aria-label="Xem chi tiết ${escapeHtml(product.name)}">
+                    ${productVisual(product, compact)}
+                </button>
+                <div class="card-body">
+                    <button class="product-name" type="button" data-detail="${product.id}" title="${escapeHtml(product.name)}">
+                        ${escapeHtml(product.name)}
+                    </button>
+                    <div class="product-card-rating">
+                        <span class="stars">${"★".repeat(5)}</span>
+                        <span class="rating-val">5.0</span>
+                        <span class="rating-count">(Đánh giá)</span>
+                    </div>
+                    <div class="price-line">
+                        <strong class="price">${formatMoney(product.price)}</strong>
+                        ${product.price > 10000000 ? `<span class="installment-tag">Trả góp 0%</span>` : ""}
+                    </div>
                 </div>
                 <div class="card-actions">
-                    <button class="add-button" type="button" data-add="${product.id}" ${disabled ? "disabled" : ""}>${disabled ? "Hết hàng" : "Thêm giỏ"}</button>
+                    <button class="add-button" type="button" data-add="${product.id}" ${disabled ? "disabled" : ""} aria-label="Thêm vào giỏ">
+                        <i data-lucide="${disabled ? "ban" : "shopping-bag"}"></i>
+                        <span>${disabled ? "Hết hàng" : "Thêm giỏ"}</span>
+                    </button>
+                    <button class="quick-view-button" type="button" data-detail="${product.id}" aria-label="Xem chi tiết">
+                        <i data-lucide="eye"></i>
+                    </button>
                 </div>
             </article>
         `;
     }
 
     function renderCategories() {
+        if (!nodes.categories) return;
+        const categories = state.categories || [];
         nodes.categories.innerHTML = `
-            <div class="section-title"><span></span><h2>Danh mục sản phẩm</h2><a href="#products">Xem tất cả</a></div>
-            ${state.categories.length ? `<div class="category-grid">
-                ${state.categories.map((category) => {
-                    const count = state.products.filter((product) => product.category?.id === category.id).length;
-                    return `<article class="category-card" data-category="${escapeHtml(category.name)}">
-                        <div class="category-icon">${icon("tag", 28)}</div>
-                        <div class="category-info"><strong>${escapeHtml(category.name)}</strong><span>${count} sản phẩm</span></div>
-                    </article>`;
-                }).join("")}
-            </div>` : `<p class="empty-state">Chưa có danh mục sản phẩm.</p>`}
+            <div class="section-title">
+                <span></span>
+                <h2>Danh Mục Nổi Bật</h2>
+                <a href="#products" class="view-all-link">Xem tất cả sản phẩm <i data-lucide="arrow-right"></i></a>
+            </div>
+            ${categories.length ? `
+                <div class="category-grid">
+                    ${categories.map((category) => {
+                        const count = state.products.filter((product) => product.category?.id === category.id).length;
+                        return `
+                            <article class="category-card" data-category-filter="${escapeHtml(category.name)}">
+                                <div class="category-icon">${icon("smartphone", 26)}</div>
+                                <div class="category-info">
+                                    <strong>${escapeHtml(category.name)}</strong>
+                                    <span>${count} sản phẩm</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="category-chevron"></i>
+                            </article>
+                        `;
+                    }).join("")}
+                </div>
+            ` : `<p class="empty-state">Chưa có danh mục nào được khởi tạo.</p>`}
         `;
         refreshIcons();
     }
 
     function renderCategoryMenus() {
-        const categories = state.categories;
-        nodes.megaMenu.innerHTML = categories.length
-            ? categories.map((category) => `<div><strong>${escapeHtml(category.name)}</strong><button type="button" data-menu-search="${escapeHtml(category.name)}">Xem sản phẩm</button></div>`).join("")
-            : `<p class="empty-state">Chưa có danh mục.</p>`;
-        nodes.catalogList.innerHTML = categories.length
-            ? categories.map((category) => `<button class="catalog-item" type="button" data-menu-search="${escapeHtml(category.name)}"><span>${escapeHtml(category.name)}</span>${icon("chevron-right", 18)}</button>`).join("")
-            : `<p class="empty-state">Chưa có danh mục.</p>`;
+        const categories = state.categories || [];
+        if (nodes.megaMenu) {
+            nodes.megaMenu.innerHTML = categories.length
+                ? categories.map((category) => `
+                    <div class="mega-menu-group">
+                        <strong>${escapeHtml(category.name)}</strong>
+                        <button type="button" data-menu-search="${escapeHtml(category.name)}">
+                            <i data-lucide="arrow-right"></i> Xem tất cả
+                        </button>
+                    </div>
+                `).join("")
+                : `<p class="empty-state">Chưa có danh mục.</p>`;
+        }
+
+        if (nodes.catalogList) {
+            nodes.catalogList.innerHTML = categories.length
+                ? categories.map((category) => {
+                    const count = state.products.filter((product) => product.category?.id === category.id).length;
+                    return `
+                        <button class="catalog-item" type="button" data-menu-search="${escapeHtml(category.name)}">
+                            <div class="catalog-item-left">
+                                <i data-lucide="tag"></i>
+                                <span>${escapeHtml(category.name)}</span>
+                            </div>
+                            <span class="catalog-item-count">${count}</span>
+                        </button>
+                    `;
+                }).join("")
+                : `<p class="empty-state">Chưa có danh mục.</p>`;
+        }
+
+        if (nodes.navQuickCategories) {
+            nodes.navQuickCategories.innerHTML = categories.slice(0, 5).map((category) => `
+                <button type="button" class="quick-cat-pill" data-menu-search="${escapeHtml(category.name)}">
+                    ${escapeHtml(category.name)}
+                </button>
+            `).join("");
+        }
+
+        if (nodes.filterCategory) {
+            const currentVal = nodes.filterCategory.value;
+            nodes.filterCategory.innerHTML = `<option value="">Tất cả danh mục (${categories.length})</option>`
+                + categories.map((cat) => `<option value="${escapeHtml(cat.name)}" ${currentVal === cat.name ? "selected" : ""}>${escapeHtml(cat.name)}</option>`).join("");
+        }
+
         refreshIcons();
     }
 
-    function renderLayout() {
-        renderCategories();
-        renderCategoryMenus();
-
-        nodes.products.innerHTML = `
-            <div class="tabs" id="productTabs">
-                <button class="tab active" data-filter="all" type="button">${icon("layout-grid", 18)}Tất cả sản phẩm</button>
-                <button class="tab" data-filter="in-stock" type="button">${icon("package-check", 18)}Còn hàng</button>
-                <button class="tab" data-filter="out-of-stock" type="button">${icon("package-x", 18)}Hết hàng</button>
-            </div>
-            <div class="status-line" id="dataStatus"></div>
-            <div class="product-grid" id="productGrid"></div>
-            <nav class="product-pagination hidden" id="productPagination" aria-label="Phân trang sản phẩm"></nav>
-        `;
-
-        renderDeal();
-        renderCategorySections();
-        renderFooter();
-        refreshIcons();
+    function renderBrandFilters() {
+        if (!nodes.filterBrand) return;
+        const brands = state.brands || [];
+        const currentVal = nodes.filterBrand.value;
+        nodes.filterBrand.innerHTML = `<option value="">Tất cả thương hiệu (${brands.length})</option>`
+            + brands.map((b) => `<option value="${escapeHtml(b.name)}" ${currentVal === b.name ? "selected" : ""}>${escapeHtml(b.name)}</option>`).join("");
     }
 
-    function filteredProducts(flag = state.filter, query = state.query) {
+    function filteredProducts() {
         return state.products.filter((product) => {
-            const matchesFlag = flag === "all"
-                || (flag === "in-stock" && product.stock > 0)
-                || (flag === "out-of-stock" && product.stock <= 0);
-            const text = `${product.name} ${product.category?.name || ""}`.toLowerCase();
-            const matchesQuery = !query || text.includes(query.toLowerCase());
-            return matchesFlag && matchesQuery;
+            // Stock flag filter
+            const matchesFlag = state.filter === "all"
+                || (state.filter === "in-stock" && product.stock > 0)
+                || (state.filter === "out-of-stock" && product.stock <= 0);
+
+            // Search query filter
+            const prodText = `${product.name} ${product.category?.name || ""} ${product.brand?.name || ""}`.toLowerCase();
+            const matchesQuery = !state.query || prodText.includes(state.query.toLowerCase());
+
+            // Category select filter
+            const matchesCategory = !state.categoryFilter
+                || (product.category?.name && product.category.name.toLowerCase() === state.categoryFilter.toLowerCase());
+
+            // Brand select filter
+            const matchesBrand = !state.brandFilter
+                || (product.brand?.name && product.brand.name.toLowerCase() === state.brandFilter.toLowerCase());
+
+            // Price range filter
+            let matchesPrice = true;
+            const price = Number(product.price) || 0;
+            if (state.priceFilter === "under-5m") matchesPrice = price < 5000000;
+            else if (state.priceFilter === "5m-15m") matchesPrice = price >= 5000000 && price <= 15000000;
+            else if (state.priceFilter === "15m-25m") matchesPrice = price >= 15000000 && price <= 25000000;
+            else if (state.priceFilter === "above-25m") matchesPrice = price > 25000000;
+
+            return matchesFlag && matchesQuery && matchesCategory && matchesBrand && matchesPrice;
+        }).sort((a, b) => {
+            // Sorting
+            if (state.sortFilter === "price-asc") return (Number(a.price) || 0) - (Number(b.price) || 0);
+            if (state.sortFilter === "price-desc") return (Number(b.price) || 0) - (Number(a.price) || 0);
+            if (state.sortFilter === "name-asc") return (a.name || "").localeCompare(b.name || "", "vi");
+            if (state.sortFilter === "stock-desc") return (Number(b.stock) || 0) - (Number(a.stock) || 0);
+            return 0;
         });
     }
 
+    function renderActiveFilterChips() {
+        if (!nodes.activeFilterChips) return;
+        const chips = [];
+
+        if (state.query) {
+            chips.push(`
+                <span class="filter-chip">
+                    <span>Tìm: "<strong>${escapeHtml(state.query)}</strong>"</span>
+                    <button type="button" data-remove-filter="query" aria-label="Xóa tìm kiếm"><i data-lucide="x"></i></button>
+                </span>
+            `);
+        }
+        if (state.categoryFilter) {
+            chips.push(`
+                <span class="filter-chip">
+                    <span>Danh mục: <strong>${escapeHtml(state.categoryFilter)}</strong></span>
+                    <button type="button" data-remove-filter="category" aria-label="Xóa lọc danh mục"><i data-lucide="x"></i></button>
+                </span>
+            `);
+        }
+        if (state.brandFilter) {
+            chips.push(`
+                <span class="filter-chip">
+                    <span>Thương hiệu: <strong>${escapeHtml(state.brandFilter)}</strong></span>
+                    <button type="button" data-remove-filter="brand" aria-label="Xóa lọc thương hiệu"><i data-lucide="x"></i></button>
+                </span>
+            `);
+        }
+        if (state.priceFilter && state.priceFilter !== "all") {
+            const priceLabels = {
+                "under-5m": "Dưới 5 triệu",
+                "5m-15m": "5 - 15 triệu",
+                "15m-25m": "15 - 25 triệu",
+                "above-25m": "Trên 25 triệu"
+            };
+            chips.push(`
+                <span class="filter-chip">
+                    <span>Giá: <strong>${priceLabels[state.priceFilter] || state.priceFilter}</strong></span>
+                    <button type="button" data-remove-filter="price" aria-label="Xóa lọc giá"><i data-lucide="x"></i></button>
+                </span>
+            `);
+        }
+
+        const hasFilter = chips.length > 0;
+        if (hasFilter) {
+            nodes.activeFilterChips.innerHTML = `
+                <div class="chips-label">Bộ lọc đang áp dụng:</div>
+                <div class="chips-list">${chips.join("")}</div>
+                <button type="button" class="clear-all-chips-btn" id="clearAllFiltersBtn">
+                    <i data-lucide="trash-2"></i> Xóa tất cả
+                </button>
+            `;
+            nodes.activeFilterChips.classList.remove("hidden");
+            if (nodes.resetFilterBtn) nodes.resetFilterBtn.classList.remove("hidden");
+        } else {
+            nodes.activeFilterChips.innerHTML = "";
+            nodes.activeFilterChips.classList.add("hidden");
+            if (nodes.resetFilterBtn) nodes.resetFilterBtn.classList.add("hidden");
+        }
+        refreshIcons();
+    }
+
     function renderProducts() {
-        const grid = $("#productGrid");
-        const pagination = $("#productPagination");
+        const grid = nodes.productGrid || $("#productGrid");
+        const pagination = nodes.productPagination || $("#productPagination");
+        if (!grid) return;
+
         const filtered = filteredProducts();
         const pageSize = 12;
         const pageCount = Math.ceil(filtered.length / pageSize);
         state.productsPage = Math.min(state.productsPage, Math.max(pageCount - 1, 0));
         const pageProducts = filtered.slice(state.productsPage * pageSize, (state.productsPage + 1) * pageSize);
 
-        grid.innerHTML = pageProducts.length
-            ? pageProducts.map((product) => productCard(product)).join("")
-            : `<div class="empty-state">${state.products.length ? "Không tìm thấy sản phẩm phù hợp." : "Chưa có sản phẩm để hiển thị."}</div>`;
+        if (nodes.productTotalCount) {
+            nodes.productTotalCount.textContent = `${filtered.length} sản phẩm`;
+        }
+
+        renderActiveFilterChips();
+
+        if (pageProducts.length) {
+            grid.innerHTML = pageProducts.map((product) => productCard(product)).join("");
+        } else {
+            grid.innerHTML = `
+                <div class="empty-state products-empty">
+                    <div class="empty-icon"><i data-lucide="search-x"></i></div>
+                    <h3>Không tìm thấy sản phẩm phù hợp</h3>
+                    <p>Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh lại các tiêu chí bộ lọc giá/danh mục.</p>
+                    <button type="button" class="primary-button" id="emptyResetFilterBtn">
+                        <i data-lucide="rotate-ccw"></i> Xóa tất cả bộ lọc
+                    </button>
+                </div>
+            `;
+        }
 
         if (pageCount > 1) {
             const firstProduct = state.productsPage * pageSize + 1;
             const lastProduct = Math.min((state.productsPage + 1) * pageSize, filtered.length);
             pagination.innerHTML = `
-                <span class="pagination-summary" aria-live="polite">Hiển thị ${firstProduct}–${lastProduct} trong ${filtered.length} sản phẩm</span>
+                <span class="pagination-summary" aria-live="polite">Hiển thị <strong>${firstProduct}–${lastProduct}</strong> trong <strong>${filtered.length}</strong> sản phẩm</span>
                 <div class="product-page-controls">
-                    <button class="product-page-button" type="button" data-products-page="${state.productsPage - 1}" ${state.productsPage === 0 ? "disabled" : ""} aria-label="Trang trước">${icon("chevron-left", 17)}<span>Trước</span></button>
-                    <span class="pagination-current">Trang ${state.productsPage + 1} / ${pageCount}</span>
-                    <button class="product-page-button" type="button" data-products-page="${state.productsPage + 1}" ${state.productsPage >= pageCount - 1 ? "disabled" : ""} aria-label="Trang sau"><span>Sau</span>${icon("chevron-right", 17)}</button>
+                    <button class="product-page-button" type="button" data-products-page="${state.productsPage - 1}" ${state.productsPage === 0 ? "disabled" : ""} aria-label="Trang trước">
+                        ${icon("chevron-left", 16)}<span>Trước</span>
+                    </button>
+                    <span class="pagination-current">Trang <strong>${state.productsPage + 1}</strong> / ${pageCount}</span>
+                    <button class="product-page-button" type="button" data-products-page="${state.productsPage + 1}" ${state.productsPage >= pageCount - 1 ? "disabled" : ""} aria-label="Trang sau">
+                        <span>Sau</span>${icon("chevron-right", 16)}
+                    </button>
                 </div>
             `;
             pagination.classList.remove("hidden");
@@ -225,28 +472,46 @@
             pagination.innerHTML = "";
             pagination.classList.add("hidden");
         }
+
         refreshIcons();
     }
 
     function renderDeal() {
+        if (!nodes.deals) return;
         const dealProducts = state.products.filter((product) => product.stock > 0).slice(0, 4);
         nodes.deals.classList.toggle("hidden", !dealProducts.length);
         if (!dealProducts.length) {
             nodes.deals.innerHTML = "";
             return;
         }
+
         nodes.deals.innerHTML = `
-            <div class="deal-copy">
-                <span>Sản phẩm đang có hàng</span>
-                <h2>Chọn thiết bị phù hợp với bạn</h2>
-                <p>Danh sách sản phẩm được cập nhật từ cửa hàng.</p>
+            <div class="deal-banner">
+                <div class="deal-copy">
+                    <div class="deal-badge"><i data-lucide="flame"></i> GIẢM GIÁ ĐẶC BIỆT TRONG NGÀY</div>
+                    <h2>Săn Sale Công Nghệ Giá Cực Hời</h2>
+                    <p>Hàng ngàn sản phẩm công nghệ chính hãng ưu đãi sâu. Số lượng có hạn trong khung giờ vàng.</p>
+                    <div class="deal-countdown">
+                        <span class="deal-cd-label">Kết thúc sau:</span>
+                        <div class="deal-cd-boxes">
+                            <span class="cd-box"><strong>08</strong><small>Giờ</small></span>
+                            <span class="cd-sep">:</span>
+                            <span class="cd-box"><strong>45</strong><small>Phút</small></span>
+                            <span class="cd-sep">:</span>
+                            <span class="cd-box"><strong>12</strong><small>Giây</small></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="deal-grid">
+                    ${dealProducts.map((product) => productCard(product, true)).join("")}
+                </div>
             </div>
-            <div class="deal-grid">${dealProducts.map((product) => productCard(product, true)).join("")}</div>
         `;
         refreshIcons();
     }
 
     function renderCategorySections() {
+        if (!nodes.categorySections) return;
         const groups = [...new Set(state.products.map((product) => product.category?.name).filter(Boolean))];
         nodes.categorySections.innerHTML = groups.map((name) => {
             const products = state.products.filter((product) => product.category?.name === name).slice(0, 5);
@@ -254,71 +519,221 @@
             const safeName = escapeHtml(name);
             return `
                 <section class="shell panel category-product-section">
-                    <div class="section-title"><span></span><h2>${safeName}</h2><a href="#products" data-menu-search="${safeName}">Xem toàn bộ</a></div>
-                    <div class="product-grid small-grid">${products.map((product) => productCard(product, true)).join("")}</div>
+                    <div class="section-title">
+                        <span></span>
+                        <h2>${safeName}</h2>
+                        <a href="#products" class="view-all-link" data-menu-search="${safeName}">
+                            Xem tất cả (${products.length}) <i data-lucide="arrow-right"></i>
+                        </a>
+                    </div>
+                    <div class="product-grid small-grid">
+                        ${products.map((product) => productCard(product, true)).join("")}
+                    </div>
                 </section>
             `;
         }).join("");
-    }
-
-    function renderFooter() {
-        nodes.footer.innerHTML = `
-            <div class="shell footer-grid">
-                <div><strong>E-Market</strong><p>Sản phẩm được tải từ hệ thống cửa hàng.</p></div>
-                <div><strong>Sản phẩm</strong><a href="#products">Tất cả sản phẩm</a><a href="#categories">Danh mục</a></div>
-                <div><strong>Danh mục</strong>${state.categories.map((category) => `<a href="#products" data-menu-search="${escapeHtml(category.name)}">${escapeHtml(category.name)}</a>`).join("")}</div>
-            </div>
-        `;
         refreshIcons();
     }
 
     function setView(view) {
         state.view = view;
         document.querySelectorAll(".listing-view").forEach((section) => section.classList.toggle("hidden", view !== "listing"));
-        nodes.productDetail.classList.toggle("hidden", view !== "detail");
-        nodes.adminView.classList.toggle("hidden", view !== "admin");
-        nodes.footer.classList.toggle("hidden", view === "admin");
+        if (nodes.productDetail) nodes.productDetail.classList.toggle("hidden", view !== "detail");
+        if (nodes.profileView) nodes.profileView.classList.toggle("hidden", view !== "profile");
+        if (nodes.adminView) nodes.adminView.classList.toggle("hidden", view !== "admin");
+        const footer = $(".site-footer");
+        if (footer) footer.classList.toggle("hidden", view === "admin");
         document.body.classList.toggle("admin-mode", view === "admin");
+
+        // Mobile active tab sync
+        if (nodes.mobNavHome) nodes.mobNavHome.classList.toggle("active", view === "listing");
     }
 
     function renderDetail(product) {
         state.selectedProduct = product;
         state.quantity = 1;
         setView("detail");
+
+        const brandName = product.brand?.name ? escapeHtml(product.brand.name) : "Chính hãng";
+        const categoryName = product.category?.name ? escapeHtml(product.category.name) : "Sản phẩm";
+        const isInStock = product.stock > 0;
+        const relatedProducts = state.products
+            .filter((p) => p.id !== product.id && (p.category?.id === product.category?.id || p.brand?.id === product.brand?.id))
+            .slice(0, 4);
+
         nodes.productDetail.innerHTML = `
-            <button class="back-button" id="backToProducts" type="button">${icon("arrow-left", 18)} Quay lại sản phẩm</button>
+            <div class="detail-breadcrumbs">
+                <a href="#home" id="breadcrumbHome"><i data-lucide="home"></i> Trang chủ</a>
+                <span class="crumb-sep">/</span>
+                <span class="crumb-category" data-menu-search="${categoryName}">${categoryName}</span>
+                <span class="crumb-sep">/</span>
+                <span class="crumb-current">${escapeHtml(product.name)}</span>
+            </div>
+
+            <div class="detail-top-nav">
+                <button class="back-button" id="backToProducts" type="button">
+                    <i data-lucide="arrow-left"></i> Quay lại danh sách sản phẩm
+                </button>
+            </div>
+
             <div class="detail-grid">
                 <div class="detail-gallery">
-                    <div class="detail-main-visual">${productVisual(product)}</div>
+                    <div class="detail-main-visual">
+                        ${productVisual(product)}
+                    </div>
+                    <div class="detail-assurance-badges">
+                        <div class="assurance-item">
+                            <i data-lucide="shield-check"></i>
+                            <span>Bảo hành chính hãng 12 tháng</span>
+                        </div>
+                        <div class="assurance-item">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>1 đổi 1 trong 30 ngày nếu lỗi</span>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="detail-buy">
-                    <h1>${escapeHtml(product.name)}</h1>
-                    <div class="detail-meta">
-                        <span>Loại: <strong>${escapeHtml(product.category?.name || "")}</strong></span>
-                        <span>Thương hiệu: <strong>${escapeHtml(product.brand?.name || "")}</strong></span>
-                        <span>Tình trạng: <strong>${product.stock > 0 ? "Còn hàng" : "Hết hàng"}</strong></span>
+                    <div class="detail-brand-badge">${brandName} · ${categoryName}</div>
+                    <h1 class="detail-title">${escapeHtml(product.name)}</h1>
+
+                    <div class="detail-rating-row">
+                        <div class="stars">${"★".repeat(5)}</div>
+                        <span class="score">5.0</span>
+                        <span class="count">(12 đánh giá)</span>
+                        <span class="sep">·</span>
+                        <span class="stock-badge ${isInStock ? "in-stock" : "out-of-stock"}">
+                            <i data-lucide="${isInStock ? "check-circle" : "x-circle"}"></i>
+                            ${isInStock ? `Còn hàng (${product.stock} sản phẩm)` : "Hết hàng"}
+                        </span>
                     </div>
-                    <div class="detail-price"><span>${formatMoney(product.price)}</span></div>
-                    <div class="quantity-control">
-                        <button type="button" data-qty="-1">-</button><input id="detailQuantity" value="1" readonly><button type="button" data-qty="1">+</button>
+
+                    <div class="detail-price-box">
+                        <div class="detail-price-main">
+                            <strong class="detail-price">${formatMoney(product.price)}</strong>
+                            ${product.price > 5000000 ? `<span class="detail-original-price">${formatMoney(product.price * 1.15)}</span>` : ""}
+                        </div>
+                        <p class="detail-tax-note"><i data-lucide="check"></i> Giá đã bao gồm thuế VAT & Bảo hành đầy đủ</p>
                     </div>
-                    <div class="buy-actions">
-                        <button class="add-cart-wide" type="button" data-add="${product.id}" ${product.stock <= 0 ? "disabled" : ""}>Thêm vào giỏ</button>
-                        <button class="primary-button" type="button" data-buy-now="${product.id}" ${product.stock <= 0 ? "disabled" : ""}>Mua ngay</button>
+
+                    <div class="detail-options">
+                        <div class="detail-qty-group">
+                            <label class="qty-label">Số lượng mua:</label>
+                            <div class="quantity-control">
+                                <button type="button" data-qty="-1" aria-label="Giảm số lượng" ${!isInStock ? "disabled" : ""}>−</button>
+                                <input id="detailQuantity" value="1" readonly aria-label="Số lượng">
+                                <button type="button" data-qty="1" aria-label="Tăng số lượng" ${!isInStock ? "disabled" : ""}>+</button>
+                            </div>
+                            ${isInStock ? `<span class="stock-hint">Kho sẵn: ${product.stock} máy</span>` : ""}
+                        </div>
+
+                        <div class="buy-actions">
+                            <button class="add-cart-wide" type="button" data-add="${product.id}" ${!isInStock ? "disabled" : ""}>
+                                <i data-lucide="shopping-bag"></i>
+                                <span>Thêm vào giỏ hàng</span>
+                            </button>
+                            <button class="primary-button buy-now-btn" type="button" data-buy-now="${product.id}" ${!isInStock ? "disabled" : ""}>
+                                <i data-lucide="zap"></i>
+                                <span>Mua ngay</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="detail-perks">
+                        <div class="perk-card">
+                            <i data-lucide="truck"></i>
+                            <div>
+                                <strong>Giao hàng miễn phí</strong>
+                                <small>Nhanh chóng trong 2h tại khu vực nội thành</small>
+                            </div>
+                        </div>
+                        <div class="perk-card">
+                            <i data-lucide="credit-card"></i>
+                            <div>
+                                <strong>Trả góp 0% tiện lợi</strong>
+                                <small>Thủ tục xét duyệt online chỉ từ 5 phút</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <aside class="detail-sidebar">
-                    <div><strong>Thông tin tồn kho</strong><span>Số lượng sản phẩm được cập nhật từ cửa hàng.</span></div>
-                    <div><strong>Đặt hàng</strong><span>Nhập thông tin người nhận ở bước xác nhận đơn hàng.</span></div>
-                    <div><strong>Hỗ trợ</strong><span>Thông tin đơn hàng sẽ hiển thị trong tài khoản sau khi đăng nhập.</span></div>
+                    <div class="sidebar-box info-box">
+                        <div class="sidebar-box-head">
+                            <i data-lucide="info"></i>
+                            <strong>Thông tin sản phẩm</strong>
+                        </div>
+                        <ul class="detail-specs-list">
+                            <li><span>Thương hiệu:</span> <strong>${brandName}</strong></li>
+                            <li><span>Danh mục:</span> <strong>${categoryName}</strong></li>
+                            <li><span>Mã sản phẩm:</span> <strong>#${product.id}</strong></li>
+                            <li><span>Tình trạng:</span> <strong>${isInStock ? "Hàng mới 100%" : "Đang chờ nhập"}</strong></li>
+                            <li><span>Bộ phụ kiện:</span> <strong>Hộp, Cáp sạc, Sách HDSD</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="sidebar-box support-box">
+                        <div class="sidebar-box-head">
+                            <i data-lucide="headphones"></i>
+                            <strong>Bạn cần hỗ trợ?</strong>
+                        </div>
+                        <p>Liên hệ ngay chuyên viên công nghệ để được giải đáp mọi thắc mắc:</p>
+                        <a href="tel:18006868" class="hotline-btn"><i data-lucide="phone"></i> 1800 6868 (Miễn phí)</a>
+                    </div>
                 </aside>
             </div>
-            <section class="product-reviews" aria-labelledby="productReviewsTitle">
-                <div class="section-title"><span></span><h2 id="productReviewsTitle">Đánh giá sản phẩm</h2></div>
-                <div id="reviewFormContainer"></div>
-                <div class="review-list" id="reviewList" aria-live="polite"><p class="empty-state">Đang tải đánh giá…</p></div>
+
+            <!-- Product Description Tab -->
+            <section class="product-description-panel">
+                <div class="section-title">
+                    <span></span>
+                    <h2>Mô Tả Sản Phẩm</h2>
+                </div>
+                <div class="description-content">
+                    <p>${product.description ? escapeHtml(product.description).replace(/\n/g, "<br>") : "Sản phẩm công nghệ chính hãng được phân phối tại E-Market. Cam kết nguồn gốc xuất xứ rõ ràng, chính sách bảo hành và hỗ trợ kỹ thuật trọn đời."}</p>
+                </div>
             </section>
+
+            <!-- Product Reviews Section -->
+            <section class="product-reviews" aria-labelledby="productReviewsTitle">
+                <div class="section-title">
+                    <span></span>
+                    <h2 id="productReviewsTitle">Đánh Giá & Nhận Xét</h2>
+                </div>
+
+                <div class="reviews-summary-card">
+                    <div class="rating-overall">
+                        <strong class="overall-number">5.0</strong>
+                        <div class="stars">${"★".repeat(5)}</div>
+                        <span>Dựa trên đánh giá của khách hàng</span>
+                    </div>
+                    <div class="rating-bars">
+                        <div class="bar-line"><span>5 sao</span><div class="bar-track"><div class="bar-fill" style="width: 90%;"></div></div><span>90%</span></div>
+                        <div class="bar-line"><span>4 sao</span><div class="bar-track"><div class="bar-fill" style="width: 10%;"></div></div><span>10%</span></div>
+                        <div class="bar-line"><span>3 sao</span><div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div><span>0%</span></div>
+                    </div>
+                </div>
+
+                <div id="reviewFormContainer" class="review-form-container"></div>
+                <div class="review-list" id="reviewList" aria-live="polite">
+                    <p class="empty-state">Đang tải đánh giá…</p>
+                </div>
+            </section>
+
+            <!-- Related Products -->
+            ${relatedProducts.length ? `
+                <section class="related-products-section">
+                    <div class="section-title">
+                        <span></span>
+                        <h2>Sản Phẩm Cùng Loại</h2>
+                    </div>
+                    <div class="product-grid small-grid">
+                        ${relatedProducts.map((p) => productCard(p, true)).join("")}
+                    </div>
+                </section>
+            ` : ""}
         `;
+
         refreshIcons();
         state.reviewItems = [];
         state.editingReviewId = null;
@@ -331,61 +746,115 @@
         const container = $("#reviewFormContainer");
         if (!container || !state.selectedProduct) return;
         if (!window.emarketApi.getToken()) {
-            container.innerHTML = `<p class="review-login-prompt">Đăng nhập để gửi đánh giá. <button class="primary-button review-login-button" type="button" data-auth-open="login">Đăng nhập</button></p>`;
+            container.innerHTML = `
+                <div class="review-login-prompt">
+                    <i data-lucide="message-square"></i>
+                    <div>
+                        <strong>Bạn đã dùng sản phẩm này?</strong>
+                        <p>Hãy chia sẻ cảm nhận và đánh giá để giúp những người mua khác lựa chọn tốt hơn.</p>
+                    </div>
+                    <button class="primary-button review-login-button" type="button" data-auth-open="login">
+                        <i data-lucide="log-in"></i> Đăng nhập để đánh giá
+                    </button>
+                </div>
+            `;
+            refreshIcons();
             return;
         }
 
         container.innerHTML = `
             <form class="review-form" id="createReviewForm">
-                <label>Điểm đánh giá
-                    <select name="rating" required>
-                        <option value="5">5 sao</option><option value="4">4 sao</option>
-                        <option value="3">3 sao</option><option value="2">2 sao</option><option value="1">1 sao</option>
-                    </select>
+                <div class="review-form-top">
+                    <label class="star-rating-select-label">
+                        <span>Đánh giá sao của bạn:</span>
+                        <select name="rating" required>
+                            <option value="5">⭐⭐⭐⭐⭐ (5 sao - Tuyệt vời)</option>
+                            <option value="4">⭐⭐⭐⭐ (4 sao - Rất tốt)</option>
+                            <option value="3">⭐⭐⭐ (3 sao - Tạm được)</option>
+                            <option value="2">⭐⭐ (2 sao - Chưa ưng ý)</option>
+                            <option value="1">⭐ (1 sao - Rất tệ)</option>
+                        </select>
+                    </label>
+                </div>
+                <label class="comment-textarea-label">
+                    <span>Nhận xét chi tiết:</span>
+                    <textarea name="comment" rows="3" maxlength="2000" placeholder="Chia sẻ trải nghiệm về hiệu năng, thiết kế, độ bền, camera hoặc dịch vụ giao hàng..." required></textarea>
                 </label>
-                <label>Nhận xét<textarea name="comment" rows="3" maxlength="2000" placeholder="Chia sẻ trải nghiệm của bạn"></textarea></label>
-                <button class="primary-button" type="submit">Gửi đánh giá</button>
+                <div class="review-submit-wrap">
+                    <button class="primary-button" type="submit">
+                        <i data-lucide="send"></i> Gửi đánh giá
+                    </button>
+                </div>
             </form>
         `;
+        refreshIcons();
     }
 
     function renderReviewList() {
         const list = $("#reviewList");
         if (!list) return;
         if (!state.reviewItems.length) {
-            list.innerHTML = `<p class="empty-state">Sản phẩm chưa có đánh giá nào.</p>`;
+            list.innerHTML = `<div class="empty-state"><i data-lucide="message-circle"></i><p>Sản phẩm chưa có đánh giá nào. Hãy là người đầu tiên nhận xét!</p></div>`;
+            refreshIcons();
             return;
         }
 
         const currentUser = window.emarketApi.getUserName();
         list.innerHTML = state.reviewItems.map((review) => {
             const isOwner = currentUser && currentUser === review.username;
+            const authorInitial = (review.username || "K").charAt(0).toUpperCase();
+
             if (state.editingReviewId === review.id && isOwner) {
                 return `
-                    <article class="review-card">
+                    <article class="review-card editing-card">
                         <form class="review-edit-form" data-review-edit-form="${review.id}">
                             <label>Điểm đánh giá
                                 <select name="rating" required>
                                     ${[5, 4, 3, 2, 1].map((rating) => `<option value="${rating}" ${Number(review.rating) === rating ? "selected" : ""}>${rating} sao</option>`).join("")}
                                 </select>
                             </label>
-                            <label>Nhận xét<textarea name="comment" rows="3" maxlength="2000">${escapeHtml(review.comment || "")}</textarea></label>
-                            <div class="review-actions"><button class="primary-button" type="submit">Lưu</button><button class="ghost-button" type="button" data-cancel-review-edit>Hủy</button></div>
+                            <label>Nhận xét
+                                <textarea name="comment" rows="3" maxlength="2000" required>${escapeHtml(review.comment || "")}</textarea>
+                            </label>
+                            <div class="review-actions">
+                                <button class="primary-button" type="submit"><i data-lucide="check"></i> Lưu thay đổi</button>
+                                <button class="ghost-button" type="button" data-cancel-review-edit>Hủy</button>
+                            </div>
                         </form>
                     </article>
                 `;
             }
 
             const date = review.createdAt ? new Date(review.createdAt).toLocaleDateString("vi-VN") : "";
+            const ratingNum = Math.max(1, Math.min(5, Number(review.rating) || 5));
             return `
                 <article class="review-card">
-                    <div class="review-card-head"><strong>${escapeHtml(review.username || "Khách hàng")}</strong><span class="review-rating" aria-label="${Number(review.rating) || 0} trên 5 sao">${"★".repeat(Math.max(0, Math.min(5, Number(review.rating) || 0)))}${"☆".repeat(5 - Math.max(0, Math.min(5, Number(review.rating) || 0)))}</span></div>
-                    ${date ? `<time>${escapeHtml(date)}</time>` : ""}
-                    <p>${review.comment ? escapeHtml(review.comment) : "Không có nhận xét."}</p>
-                    ${isOwner ? `<div class="review-actions"><button class="ghost-button" type="button" data-edit-review="${review.id}">Sửa</button><button class="ghost-button danger-text" type="button" data-delete-review="${review.id}">Xóa</button></div>` : ""}
+                    <div class="review-card-head">
+                        <div class="reviewer-meta">
+                            <div class="reviewer-avatar">${escapeHtml(authorInitial)}</div>
+                            <div>
+                                <strong>${escapeHtml(review.username || "Khách hàng")}</strong>
+                                <span class="verified-tag"><i data-lucide="badge-check"></i> Đã mua tại E-Market</span>
+                            </div>
+                        </div>
+                        <div class="review-rating-block">
+                            <span class="review-stars">${"★".repeat(ratingNum)}${"☆".repeat(5 - ratingNum)}</span>
+                            ${date ? `<time class="review-date">${escapeHtml(date)}</time>` : ""}
+                        </div>
+                    </div>
+                    <div class="review-card-body">
+                        <p>${review.comment ? escapeHtml(review.comment) : "Khách hàng không để lại bình luận chi tiết."}</p>
+                    </div>
+                    ${isOwner ? `
+                        <div class="review-actions">
+                            <button class="review-action-btn edit" type="button" data-edit-review="${review.id}"><i data-lucide="edit-3"></i> Sửa</button>
+                            <button class="review-action-btn delete" type="button" data-delete-review="${review.id}"><i data-lucide="trash-2"></i> Xóa</button>
+                        </div>
+                    ` : ""}
                 </article>
             `;
         }).join("");
+        refreshIcons();
     }
 
     async function loadProductReviews(productId) {
@@ -411,15 +880,15 @@
         try {
             if (reviewId == null) {
                 await window.emarketApi.createReview(state.selectedProduct.id, payload);
-                showToast("Đã gửi đánh giá.");
+                showToast("Cảm ơn bạn đã gửi đánh giá sản phẩm!", "success");
             } else {
                 await window.emarketApi.updateReview(reviewId, payload);
                 state.editingReviewId = null;
-                showToast("Đã cập nhật đánh giá.");
+                showToast("Đã cập nhật đánh giá thành công.", "success");
             }
             await loadProductReviews(state.selectedProduct.id);
         } catch (error) {
-            showToast(`Không thể lưu đánh giá: ${error.message}`);
+            showToast(`Không thể lưu đánh giá: ${error.message}`, "error");
         }
     }
 
@@ -454,29 +923,52 @@
     function renderCart() {
         const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
         const total = cartTotal();
-        nodes.cartCount.textContent = String(totalItems);
-        nodes.cartButton.setAttribute("aria-label", `Giỏ hàng, ${totalItems} sản phẩm`);
-        nodes.cartTitle.textContent = `${totalItems} sản phẩm`;
-        nodes.cartTotal.textContent = formatMoney(total);
-        nodes.checkoutTotal.textContent = formatMoney(total);
-        nodes.checkoutButton.disabled = state.cart.length === 0;
-        nodes.cartItems.innerHTML = state.cart.length
-            ? state.cart.map((item) => `
-                <article class="cart-item">
-                    ${productVisual(item.product, true)}
-                    <div class="cart-item-info">
-                        <strong>${escapeHtml(item.product.name)}</strong>
-                        <span>${formatMoney(item.product.price)}</span>
-                        <div class="cart-item-actions">
-                            <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="-1" aria-label="Giảm số lượng" ${item.quantity <= 1 ? "disabled" : ""}>−</button>
-                            <output>${item.quantity}</output>
-                            <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="1" aria-label="Tăng số lượng" ${item.quantity >= item.product.stock ? "disabled" : ""}>+</button>
-                            <button class="cart-remove" type="button" data-cart-remove="${escapeHtml(item.id)}">Xóa</button>
+
+        if (nodes.cartCount) nodes.cartCount.textContent = String(totalItems);
+        if (nodes.mobCartCount) nodes.mobCartCount.textContent = String(totalItems);
+        if (nodes.headerCartTotal) nodes.headerCartTotal.textContent = formatMoney(total);
+        if (nodes.cartTitle) nodes.cartTitle.textContent = `${totalItems} sản phẩm trong giỏ`;
+        if (nodes.cartSubtotal) nodes.cartSubtotal.textContent = formatMoney(total);
+        if (nodes.cartTotal) nodes.cartTotal.textContent = formatMoney(total);
+        if (nodes.checkoutTotal) nodes.checkoutTotal.textContent = formatMoney(total);
+        if (nodes.checkoutButton) nodes.checkoutButton.disabled = state.cart.length === 0;
+
+        if (nodes.cartItems) {
+            nodes.cartItems.innerHTML = state.cart.length
+                ? state.cart.map((item) => `
+                    <article class="cart-item">
+                        <div class="cart-item-photo">
+                            ${productVisual(item.product, true)}
                         </div>
+                        <div class="cart-item-info">
+                            <strong class="cart-item-title" title="${escapeHtml(item.product.name)}">${escapeHtml(item.product.name)}</strong>
+                            <div class="cart-item-price">${formatMoney(item.product.price)}</div>
+                            <div class="cart-item-actions">
+                                <div class="item-qty-stepper">
+                                    <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="-1" aria-label="Giảm số lượng" ${item.quantity <= 1 ? "disabled" : ""}>−</button>
+                                    <output>${item.quantity}</output>
+                                    <button type="button" data-cart-change="${escapeHtml(item.id)}" data-delta="1" aria-label="Tăng số lượng" ${item.quantity >= item.product.stock ? "disabled" : ""}>+</button>
+                                </div>
+                                <button class="cart-remove-btn" type="button" data-cart-remove="${escapeHtml(item.id)}" title="Xóa khỏi giỏ">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `).join("")
+                : `
+                    <div class="empty-state cart-empty">
+                        <div class="empty-icon"><i data-lucide="shopping-bag"></i></div>
+                        <h3>Giỏ hàng đang trống</h3>
+                        <p>Hãy dạo quanh các danh mục để chọn cho mình thiết bị ưng ý nhất!</p>
+                        <button type="button" class="primary-button" id="cartContinueShopBtn">
+                            Tiếp tục mua hàng
+                        </button>
                     </div>
-                </article>
-            `).join("")
-            : `<p class="empty-state">Giỏ hàng đang trống. Hãy chọn sản phẩm để tiếp tục.</p>`;
+                `;
+        }
+
+        refreshIcons();
     }
 
     function addLocalCart(productId, quantity = 1) {
@@ -484,7 +976,7 @@
         if (!product || product.stock <= 0) return false;
         const existing = state.cart.find((item) => item.product.id === product.id);
         if ((existing?.quantity || 0) + quantity > product.stock) {
-            showToast(`Chỉ còn ${product.stock} sản phẩm trong kho.`);
+            showToast(`Chỉ còn ${product.stock} sản phẩm trong kho.`, "error");
             return false;
         }
         if (existing) existing.quantity += quantity;
@@ -500,13 +992,15 @@
             try {
                 state.cart = (await window.emarketApi.addToCart(Number(productId), quantity)).items;
                 renderCart();
-                showToast("Đã gửi sản phẩm vào giỏ hàng backend.");
+                showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
             } catch (error) {
-                showToast(`Không thể cập nhật giỏ hàng: ${error.message}`);
+                showToast(`Không thể cập nhật giỏ hàng: ${error.message}`, "error");
                 return false;
             }
         } else if (!addLocalCart(productId, quantity)) {
             return false;
+        } else {
+            showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
         }
         if (openDrawer) await openCart();
         return true;
@@ -518,7 +1012,7 @@
         const quantity = item.quantity + Number(delta);
         if (quantity < 1) return;
         if (quantity > item.product.stock) {
-            showToast(`Chỉ còn ${item.product.stock} sản phẩm trong kho.`);
+            showToast(`Chỉ còn ${item.product.stock} sản phẩm trong kho.`, "error");
             return;
         }
         if (item.local) {
@@ -531,7 +1025,7 @@
             state.cart = (await window.emarketApi.updateCartItem(item.id, quantity)).items;
             renderCart();
         } catch (error) {
-            showToast(`Không thể cập nhật số lượng: ${error.message}`);
+            showToast(`Không thể cập nhật số lượng: ${error.message}`, "error");
         }
     }
 
@@ -542,13 +1036,15 @@
             state.cart = state.cart.filter((candidate) => candidate.id !== item.id);
             persistGuestCart();
             renderCart();
+            showToast("Đã xóa sản phẩm khỏi giỏ.", "info");
             return;
         }
         try {
             state.cart = (await window.emarketApi.removeCartItem(item.id)).items;
             renderCart();
+            showToast("Đã xóa sản phẩm khỏi giỏ.", "info");
         } catch (error) {
-            showToast(`Không thể xóa sản phẩm: ${error.message}`);
+            showToast(`Không thể xóa sản phẩm: ${error.message}`, "error");
         }
     }
 
@@ -571,12 +1067,24 @@
         if (window.emarketApi.getToken()) {
             await loadAccountCart();
             if (state.cart.some((item) => item.local)) {
-                showToast("Một số mặt hàng chưa đồng bộ với giỏ tài khoản. Hãy thử lại sau khi kiểm tra tồn kho.");
+                showToast("Một số mặt hàng chưa đồng bộ với giỏ tài khoản. Hãy thử lại.", "error");
                 return;
+            }
+            // Auto fill profile contact into checkout form
+            if (state.profile) {
+                const form = nodes.checkoutForm;
+                if (form) {
+                    if (form.elements["customerName"] && !form.elements["customerName"].value) {
+                        form.elements["customerName"].value = state.profile.fullName || "";
+                    }
+                    if (form.elements["phone"] && !form.elements["phone"].value) {
+                        form.elements["phone"].value = state.profile.phone || "";
+                    }
+                }
             }
         }
         if (!state.cart.length) {
-            showToast("Giỏ hàng đang trống.");
+            showToast("Giỏ hàng đang trống.", "info");
             return;
         }
         closeCart();
@@ -584,12 +1092,153 @@
         nodes.checkoutModal.classList.remove("hidden");
         nodes.checkoutBackdrop.classList.remove("hidden");
         nodes.checkoutModal.setAttribute("aria-hidden", "false");
+        refreshIcons();
     }
 
     function closeCheckout() {
         nodes.checkoutModal.classList.add("hidden");
         nodes.checkoutBackdrop.classList.add("hidden");
         nodes.checkoutModal.setAttribute("aria-hidden", "true");
+    }
+
+    function profileRoleLabel(role) {
+        return ({
+            ADMIN: "Quản trị viên",
+            MEMBER: "Thành viên",
+            CUSTOMER: "Khách hàng"
+        })[String(role || "").toUpperCase()] || "Khách hàng";
+    }
+
+    function renderProfile() {
+        const profile = state.profile;
+        if (!profile) return;
+
+        const fullName = String(profile.fullName || profile.userName || "Hồ sơ cá nhân").trim();
+        const nameParts = fullName.split(/\s+/).filter(Boolean);
+        const initials = nameParts.length > 1
+            ? nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+            : fullName.slice(0, 2);
+        const membership = profile.membership || {};
+        const membershipDetails = [];
+
+        if (membership.discountPercent != null) membershipDetails.push(`Ưu đãi ${membership.discountPercent}%`);
+        if (membership.requiredPoints != null) {
+            membershipDetails.push(`Mốc hạng ${new Intl.NumberFormat("vi-VN").format(membership.requiredPoints)} điểm`);
+        }
+
+        nodes.profileTitle.textContent = fullName;
+        nodes.profileAvatar.textContent = initials.toLocaleUpperCase("vi-VN");
+        nodes.profileUserName.textContent = profile.userName ? `@${profile.userName}` : "Tài khoản E-Market";
+        nodes.profileRole.textContent = profileRoleLabel(profile.role);
+        nodes.profilePoints.textContent = new Intl.NumberFormat("vi-VN").format(Number(profile.points) || 0);
+        nodes.profileMembership.textContent = membership.name || "Thành viên";
+        nodes.profileMembershipDetails.textContent = membershipDetails.join(" · ") || "Quyền lợi thành viên E-Market";
+        nodes.profileFullNameInput.value = profile.fullName || "";
+        nodes.profileUserNameInput.value = profile.userName || "";
+        nodes.profileEmailInput.value = profile.email || "";
+        nodes.profilePhoneInput.value = profile.phone || "";
+        nodes.profileFeedback.textContent = "";
+        nodes.profileLoadState.classList.add("hidden");
+        nodes.profileContent.classList.remove("hidden");
+
+        // Load recent orders in profile
+        void loadProfileOrdersPreview();
+        refreshIcons();
+    }
+
+    async function loadProfileOrdersPreview() {
+        const container = nodes.profileOrdersPreview;
+        if (!container) return;
+        try {
+            const orders = await window.emarketApi.getMyOrders();
+            if (!orders || !orders.length) {
+                container.innerHTML = `<p class="empty-state">Bạn chưa có đơn hàng nào.</p>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="order-list-compact">
+                    ${orders.slice(0, 3).map((order) => `
+                        <div class="order-compact-card">
+                            <div class="order-compact-head">
+                                <strong>Đơn #${escapeHtml(order.id)}</strong>
+                                <span class="order-status-pill status-${String(order.status || "").toLowerCase()}">${escapeHtml(orderStatusLabel(order.status))}</span>
+                            </div>
+                            <div class="order-compact-date">${escapeHtml(orderDate(order.createdAt))}</div>
+                            <div class="order-compact-total">Tổng: <strong>${formatMoney(order.totalAmount)}</strong></div>
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        } catch (error) {
+            container.innerHTML = `<p class="empty-state">Không thể tải đơn hàng: ${escapeHtml(error.message)}</p>`;
+        }
+    }
+
+    async function loadProfile() {
+        nodes.profileContent.classList.add("hidden");
+        nodes.profileLoadMessage.textContent = "Đang tải hồ sơ…";
+        nodes.profileRetryButton.classList.add("hidden");
+        nodes.profileLoadState.classList.remove("hidden");
+
+        try {
+            state.profile = await window.emarketApi.getProfile();
+            renderProfile();
+        } catch (error) {
+            nodes.profileLoadMessage.textContent = `Không thể tải hồ sơ: ${error.message}`;
+            nodes.profileRetryButton.classList.remove("hidden");
+        }
+    }
+
+    async function showProfile() {
+        if (!window.emarketApi.getToken()) {
+            showToast("Đăng nhập để xem hồ sơ cá nhân.", "info");
+            openAuth("login");
+            return;
+        }
+
+        setView("profile");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        await loadProfile();
+    }
+
+    function resetProfileForm() {
+        if (state.profile) renderProfile();
+    }
+
+    async function handleProfileSubmit(event) {
+        event.preventDefault();
+        if (!state.profile || state.profileSaving) return;
+
+        const formValues = new FormData(nodes.profileForm);
+        const payload = {};
+        ["userName", "fullName", "email", "phone"].forEach((field) => {
+            const nextValue = String(formValues.get(field) || "").trim();
+            const currentValue = String(state.profile[field] || "");
+            if (nextValue !== currentValue) payload[field] = nextValue;
+        });
+
+        if (!Object.keys(payload).length) {
+            nodes.profileFeedback.textContent = "Chưa có thay đổi nào để lưu.";
+            return;
+        }
+
+        state.profileSaving = true;
+        nodes.profileSaveButton.disabled = true;
+        nodes.profileSaveButton.textContent = "Đang lưu…";
+        nodes.profileFeedback.textContent = "Đang cập nhật hồ sơ…";
+
+        try {
+            state.profile = await window.emarketApi.updateProfile(payload);
+            renderProfile();
+            showToast("Đã cập nhật hồ sơ thành công!", "success");
+        } catch (error) {
+            nodes.profileFeedback.textContent = `Không thể cập nhật hồ sơ: ${error.message}`;
+        } finally {
+            state.profileSaving = false;
+            nodes.profileSaveButton.disabled = false;
+            nodes.profileSaveButton.innerHTML = `<i data-lucide="save"></i> Lưu thay đổi`;
+            refreshIcons();
+        }
     }
 
     async function handleCheckoutSubmit(event) {
@@ -614,13 +1263,14 @@
             nodes.checkoutForm.reset();
             closeCheckout();
             closeCart();
-            showToast(`Đặt hàng thành công. Mã đơn hàng: #${order.id}.`);
+            showToast(`Đặt hàng thành công! Mã đơn: #${order.id}.`, "success");
         } catch (error) {
-            showToast(`Chưa thể tạo đơn hàng: ${error.message}`);
+            showToast(`Chưa thể tạo đơn hàng: ${error.message}`, "error");
         } finally {
             state.submittingOrder = false;
             nodes.placeOrderButton.disabled = false;
-            nodes.placeOrderButton.textContent = "Xác nhận đặt hàng";
+            nodes.placeOrderButton.innerHTML = `<i data-lucide="check-circle-2"></i> Xác nhận đặt hàng`;
+            refreshIcons();
         }
     }
 
@@ -641,9 +1291,10 @@
             PENDING: "Chờ xác nhận",
             CONFIRMED: "Đã xác nhận",
             PROCESSING: "Đang xử lý",
-            SHIPPING: "Đang giao",
-            SHIPPED: "Đang giao",
-            DELIVERED: "Đã giao",
+            SHIPPING: "Đang giao hàng",
+            SHIPPED: "Đang giao hàng",
+            DELIVERED: "Đã giao hàng",
+            COMPLETED: "Hoàn tất",
             CANCELLED: "Đã hủy",
             CANCELED: "Đã hủy"
         };
@@ -653,24 +1304,54 @@
 
     async function showMyOrders() {
         if (!window.emarketApi.getToken()) {
-            showToast("Đăng nhập để xem các đơn hàng của bạn.");
+            showToast("Đăng nhập để xem danh sách đơn hàng của bạn.", "info");
             openAuth("login");
             return;
         }
-        nodes.orderList.innerHTML = `<p class="empty-state">Đang tải đơn hàng…</p>`;
+        nodes.orderList.innerHTML = `<div class="empty-state"><div class="admin-spinner"></div><p>Đang tải danh sách đơn hàng…</p></div>`;
         nodes.ordersModal.classList.remove("hidden");
         nodes.ordersBackdrop.classList.remove("hidden");
         nodes.ordersModal.setAttribute("aria-hidden", "false");
+        refreshIcons();
+
         try {
             const orders = await window.emarketApi.getMyOrders();
-            nodes.orderList.innerHTML = orders.length ? orders.map((order) => `
-                <article class="order-card">
-                    <div class="order-card-head"><strong>Đơn #${escapeHtml(order.id)}</strong><span>${escapeHtml(orderStatusLabel(order.status))}</span></div>
-                    <small>${escapeHtml(orderDate(order.createdAt))}</small>
-                    <p>${(order.items || []).map((item) => `${escapeHtml(item.product?.name || "Sản phẩm")} × ${Number(item.quantity) || 0}`).join("<br>")}</p>
-                    <div class="order-card-total"><span>Tổng đơn</span><strong>${formatMoney(order.totalAmount)}</strong></div>
-                </article>
-            `).join("") : `<p class="empty-state">Bạn chưa có đơn hàng nào.</p>`;
+            nodes.orderList.innerHTML = orders.length ? orders.map((order) => {
+                const statusKey = String(order.status || "pending").toLowerCase();
+                return `
+                    <article class="order-card">
+                        <div class="order-card-head">
+                            <div class="order-head-id">
+                                <i data-lucide="package"></i>
+                                <strong>Đơn hàng #${escapeHtml(order.id)}</strong>
+                            </div>
+                            <span class="order-status-badge ${statusKey}">
+                                ${escapeHtml(orderStatusLabel(order.status))}
+                            </span>
+                        </div>
+                        <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
+                        <div class="order-card-items">
+                            ${(order.items || []).map((item) => `
+                                <div class="order-sub-item">
+                                    <span>${escapeHtml(item.product?.name || "Sản phẩm")}</span>
+                                    <span>× ${Number(item.quantity) || 0}</span>
+                                </div>
+                            `).join("")}
+                        </div>
+                        <div class="order-card-total">
+                            <span>Tổng thanh toán:</span>
+                            <strong>${formatMoney(order.totalAmount)}</strong>
+                        </div>
+                    </article>
+                `;
+            }).join("") : `
+                <div class="empty-state">
+                    <i data-lucide="package-open"></i>
+                    <h3>Bạn chưa có đơn hàng nào</h3>
+                    <p>Khám phá ngay hàng trăm sản phẩm công nghệ ưu đãi tại E-Market.</p>
+                </div>
+            `;
+            refreshIcons();
         } catch (error) {
             nodes.orderList.innerHTML = `<p class="empty-state">Không thể tải đơn hàng: ${escapeHtml(error.message)}</p>`;
         }
@@ -691,10 +1372,10 @@
             { label: "Sản phẩm", value: products.length, icon: "package" },
             { label: "Tổng đơn hàng", value: orders.length, icon: "clipboard-list" },
             { label: "Chờ xác nhận", value: pendingOrders, icon: "clock-3" },
-            { label: "Sắp hết hàng", value: lowStock, icon: "triangle-alert" }
+            { label: "Sắp hết hàng", value: lowStock, icon: "alert-triangle" }
         ];
         nodes.adminSummary.innerHTML = items.map((item) =>
-            '<article class="admin-stat"><span class="admin-stat-icon">' + icon(item.icon, 19) + '</span><div><span>' + item.label
+            '<article class="admin-stat"><span class="admin-stat-icon">' + icon(item.icon, 20) + '</span><div><span>' + item.label
             + '</span><strong>' + item.value + '</strong></div></article>'
         ).join("");
         refreshIcons();
@@ -719,17 +1400,18 @@
         if (state.adminTab === "categories") return renderAdminCategories();
         if (state.adminTab === "brands") return renderAdminBrands();
         if (state.adminTab === "memberships") return renderAdminMemberships();
+        if (state.adminTab === "users") return renderAdminUsers();
         return renderAdminOrders();
     }
 
     function renderAdminOrders() {
         const orders = [...state.admin.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        return adminHeading("Đơn hàng", "Theo dõi thông tin nhận hàng và cập nhật trạng thái đơn.", "", "")
+        return adminHeading("Quản lý đơn hàng", "Theo dõi thông tin nhận hàng và cập nhật tiến độ đơn.", "", "")
             + (orders.length ? '<div class="admin-order-list">' + orders.map((order) => {
                 const allowed = order.status === "PENDING" ? ["PROCESSING", "CANCELLED"]
                     : order.status === "PROCESSING" ? ["COMPLETED", "CANCELLED"] : [];
                 const statusControl = allowed.length
-                    ? '<div class="admin-order-status"><label for="orderStatus' + order.id + '">Cập nhật trạng thái</label>'
+                    ? '<div class="admin-order-status"><label for="orderStatus' + order.id + '">Trạng thái:</label>'
                         + '<select id="orderStatus' + order.id + '" data-order-status="' + order.id + '">'
                         + allowed.map((status) => '<option value="' + status + '">' + escapeHtml(orderStatusLabel(status)) + '</option>').join("")
                         + '</select><button class="admin-inline-button" type="button" data-order-update="' + order.id + '">Lưu</button></div>'
@@ -737,15 +1419,15 @@
                 return '<article class="admin-order-card"><div class="admin-order-top"><div><span class="admin-order-number">Đơn #' + escapeHtml(order.id)
                     + '</span><h3>' + escapeHtml(order.customerName || "Khách hàng") + '</h3></div><span class="admin-status-badge '
                     + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span></div>'
-                    + '<div class="admin-order-meta"><span>' + escapeHtml(order.phone || "Chưa có số điện thoại") + '</span><span>'
-                    + escapeHtml(orderDate(order.createdAt)) + '</span><span class="admin-order-address">' + escapeHtml(order.address || "Chưa có địa chỉ") + '</span></div>'
+                    + '<div class="admin-order-meta"><span>📞 ' + escapeHtml(order.phone || "Chưa có SĐT") + '</span><span>🕒 '
+                    + escapeHtml(orderDate(order.createdAt)) + '</span><span class="admin-order-address">📍 ' + escapeHtml(order.address || "Chưa có địa chỉ") + '</span></div>'
                     + '<div class="admin-order-items">' + ((order.items || []).map((item) =>
                         '<div><span>' + escapeHtml(item.product?.name || "Sản phẩm") + ' × ' + (Number(item.quantity) || 0)
                         + '</span><strong>' + formatMoney(Number(item.unitPrice || item.product?.price || 0) * Number(item.quantity || 0)) + '</strong></div>'
                     ).join("") || '<span>Đơn chưa có sản phẩm.</span>') + '</div>'
-                    + '<div class="admin-order-bottom"><div><span>Tổng đơn hàng</span><strong>' + formatMoney(order.totalAmount) + '</strong></div>'
+                    + '<div class="admin-order-bottom"><div><span>Tổng đơn hàng:</span><strong>' + formatMoney(order.totalAmount) + '</strong></div>'
                     + statusControl + '</div></article>';
-            }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới sẽ xuất hiện ở đây.</p></div>');
+            }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới từ khách sẽ xuất hiện ở đây.</p></div>');
     }
 
     function renderAdminProductForm() {
@@ -759,15 +1441,15 @@
         ).join("");
         const locked = !state.admin.categories.length || !state.admin.brands.length;
         return '<form class="admin-form" id="adminProductForm"><div class="admin-form-title"><strong>'
-            + (editing ? "Cập nhật sản phẩm" : "Thêm sản phẩm") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + (editing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
             + (locked ? '<p class="admin-form-hint">Cần tạo ít nhất một danh mục và một thương hiệu trước khi thêm sản phẩm.</p>' : "")
-            + '<div class="admin-form-grid"><label>Tên sản phẩm<input name="name" required maxlength="255" value="' + escapeHtml(editing?.name || "") + '"></label>'
-            + '<label>Giá bán (₫)<input name="price" type="number" min="0.01" step="0.01" required value="' + escapeHtml(editing?.price ?? "") + '"></label>'
-            + '<label>Tồn kho<input name="stock" type="number" min="0" step="1" required value="' + escapeHtml(editing?.stock ?? 0) + '"></label>'
-            + '<label>Danh mục<select name="categoryId" required>' + categoryOptions + '</select></label>'
-            + '<label>Thương hiệu<select name="brandId" required>' + brandOptions + '</select></label>'
-            + '<label>Đường dẫn ảnh<input name="imageUrl" type="text" placeholder="https://... hoặc /frontend/assets/..." value="' + escapeHtml(editing?.imageUrl || "") + '"></label>'
-            + '<label class="admin-form-wide">Mô tả<textarea name="description" rows="3">' + escapeHtml(editing?.description || "") + '</textarea></label></div>'
+            + '<div class="admin-form-grid"><label>Tên sản phẩm *<input name="name" required maxlength="255" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + '<label>Giá bán (₫) *<input name="price" type="number" min="0.01" step="0.01" required value="' + escapeHtml(editing?.price ?? "") + '"></label>'
+            + '<label>Số lượng tồn kho *<input name="stock" type="number" min="0" step="1" required value="' + escapeHtml(editing?.stock ?? 0) + '"></label>'
+            + '<label>Danh mục *<select name="categoryId" required>' + categoryOptions + '</select></label>'
+            + '<label>Thương hiệu *<select name="brandId" required>' + brandOptions + '</select></label>'
+            + '<label>Đường dẫn hình ảnh<input name="imageUrl" type="text" placeholder="https://... hoặc assets/..." value="' + escapeHtml(editing?.imageUrl || "") + '"></label>'
+            + '<label class="admin-form-wide">Mô tả sản phẩm<textarea name="description" rows="3">' + escapeHtml(editing?.description || "") + '</textarea></label></div>'
             + '<div class="admin-form-actions"><button class="primary-button" type="submit" ' + (locked ? "disabled" : "") + '>'
             + (editing ? "Lưu thay đổi" : "Tạo sản phẩm") + '</button><button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
     }
@@ -782,9 +1464,9 @@
             + '<td><div class="admin-row-actions"><button class="admin-text-button" type="button" data-admin-edit-type="product" data-admin-edit-id="' + product.id + '">Sửa</button>'
             + '<button class="admin-text-button danger" type="button" data-admin-delete-type="product" data-admin-delete-id="' + product.id + '">Xóa</button></div></td></tr>'
         ).join("");
-        return adminHeading("Sản phẩm", "Cập nhật thông tin, giá bán và số lượng tồn kho.", "Thêm sản phẩm", "product")
+        return adminHeading("Quản lý sản phẩm", "Cập nhật giá, số lượng tồn kho và thông tin sản phẩm.", "Thêm sản phẩm", "product")
             + (state.adminEditing?.type === "product" ? renderAdminProductForm() : "")
-            + (rows ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Mã</th><th>Sản phẩm</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+            + (rows ? '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Mã</th><th>Sản phẩm</th><th>Giá bán</th><th>Tồn kho</th><th>Thao tác</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
                 : '<div class="admin-message"><strong>Chưa có sản phẩm</strong><p>Tạo sản phẩm đầu tiên để bắt đầu bán hàng.</p></div>');
     }
 
@@ -792,8 +1474,8 @@
         const editing = state.adminEditing?.type === "category"
             ? state.admin.categories.find((item) => item.id === state.adminEditing.id) : null;
         return '<form class="admin-form admin-compact-form" id="adminCategoryForm"><div class="admin-form-title"><strong>'
-            + (editing ? "Cập nhật danh mục" : "Thêm danh mục") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
-            + '<div class="admin-form-grid"><label>Tên danh mục<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + (editing ? "Cập nhật danh mục" : "Thêm danh mục mới") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + '<div class="admin-form-grid"><label>Tên danh mục *<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
             + '<label>Mô tả<input name="description" value="' + escapeHtml(editing?.description || "") + '"></label></div>'
             + '<div class="admin-form-actions"><button class="primary-button" type="submit">' + (editing ? "Lưu thay đổi" : "Tạo danh mục") + '</button>'
             + '<button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
@@ -806,7 +1488,7 @@
             + '<button class="admin-text-button" type="button" data-admin-edit-type="category" data-admin-edit-id="' + category.id + '">Sửa</button>'
             + '<button class="admin-text-button danger" type="button" data-admin-delete-type="category" data-admin-delete-id="' + category.id + '">Xóa</button></div></article>'
         ).join("");
-        return adminHeading("Danh mục", "Sắp xếp sản phẩm theo nhóm để khách dễ tìm.", "Thêm danh mục", "category")
+        return adminHeading("Danh mục", "Tổ chức nhóm sản phẩm để khách hàng dễ dàng tìm kiếm.", "Thêm danh mục", "category")
             + (state.adminEditing?.type === "category" ? renderAdminCategoryForm() : "")
             + (cards ? '<div class="admin-entity-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có danh mục</strong><p>Thêm danh mục trước khi tạo sản phẩm.</p></div>');
     }
@@ -815,10 +1497,10 @@
         const editing = state.adminEditing?.type === "brand"
             ? state.admin.brands.find((item) => item.id === state.adminEditing.id) : null;
         return '<form class="admin-form admin-compact-form" id="adminBrandForm"><div class="admin-form-title"><strong>'
-            + (editing ? "Cập nhật thương hiệu" : "Thêm thương hiệu") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
-            + '<div class="admin-form-grid"><label>Tên thương hiệu<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
-            + '<label>Quốc gia<input name="country" required maxlength="100" value="' + escapeHtml(editing?.country || "") + '"></label>'
-            + '<label class="admin-form-wide">Logo (đường dẫn ảnh)<input name="logo" required maxlength="255" value="' + escapeHtml(editing?.logo || "") + '"></label></div>'
+            + (editing ? "Cập nhật thương hiệu" : "Thêm thương hiệu mới") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
+            + '<div class="admin-form-grid"><label>Tên thương hiệu *<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
+            + '<label>Quốc gia *<input name="country" required maxlength="100" value="' + escapeHtml(editing?.country || "") + '"></label>'
+            + '<label class="admin-form-wide">Logo (URL ảnh) *<input name="logo" required maxlength="255" value="' + escapeHtml(editing?.logo || "") + '"></label></div>'
             + '<div class="admin-form-actions"><button class="primary-button" type="submit">' + (editing ? "Lưu thay đổi" : "Tạo thương hiệu") + '</button>'
             + '<button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
     }
@@ -833,7 +1515,7 @@
             + '<button class="admin-text-button" type="button" data-admin-edit-type="brand" data-admin-edit-id="' + brand.id + '">Sửa</button>'
             + '<button class="admin-text-button danger" type="button" data-admin-delete-type="brand" data-admin-delete-id="' + brand.id + '">Xóa</button></div></article>'
         ).join("");
-        return adminHeading("Thương hiệu", "Quản lý nhãn hàng hiển thị trong danh mục sản phẩm.", "Thêm thương hiệu", "brand")
+        return adminHeading("Thương hiệu", "Quản lý đối tác và hãng sản xuất hiển thị trong cửa hàng.", "Thêm thương hiệu", "brand")
             + (state.adminEditing?.type === "brand" ? renderAdminBrandForm() : "")
             + (cards ? '<div class="admin-entity-list">' + cards + '</div>' : '<div class="admin-message"><strong>Chưa có thương hiệu</strong><p>Thêm thương hiệu trước khi tạo sản phẩm.</p></div>');
     }
@@ -844,40 +1526,93 @@
             + '</span><h3>' + escapeHtml(membership.name) + '</h3><p>' + Number(membership.requiredPoints || 0) + ' điểm để đạt hạng này</p></div>'
             + '<strong>' + Number(membership.discountPercent || 0) + '%<small> ưu đãi</small></strong></article>'
         ).join("");
-        return adminHeading("Hạng thành viên", "Các hạng và mức điểm được quy định cố định trong hệ thống.", "", "")
+        return adminHeading("Hạng thành viên", "Quy định mức điểm tích lũy và quyền lợi chiết khấu trong hệ thống.", "", "")
             + (cards ? '<div class="admin-membership-list">' + cards + '</div>' : '<div class="admin-message"><strong>Không tải được hạng thành viên</strong><p>Hãy kiểm tra kết nối rồi tải lại trang.</p></div>');
+    }
+
+    function renderAdminUsers() {
+        const page = state.admin.users;
+        const users = page?.content || [];
+        const currentUserName = window.emarketApi.getUserName();
+        const roles = ["CUSTOMER", "MEMBER", "ADMIN"];
+        const roleLabels = { CUSTOMER: "Khách hàng", MEMBER: "Thành viên", ADMIN: "Quản trị viên" };
+        const rows = users.map((user) => {
+            const isCurrentUser = currentUserName && user.userName === currentUserName;
+            const roleControl = isCurrentUser
+                ? '<span class="admin-user-current">Tài khoản đang dùng</span>'
+                : '<div class="admin-user-role-control"><select aria-label="Vai trò của ' + escapeHtml(user.userName) + '" data-user-role-select="' + user.id + '">'
+                    + roles.map((role) => '<option value="' + role + '"' + (user.role === role ? " selected" : "") + '>' + roleLabels[role] + '</option>').join("")
+                    + '</select><button class="admin-inline-button" type="button" data-user-role-update="' + user.id + '">Lưu</button></div>';
+            const contact = [user.email, user.phone].filter(Boolean).map(escapeHtml).join("<br>") || "Chưa cập nhật";
+            const membership = user.membership?.name || "Chưa có hạng";
+
+            return '<tr><td class="admin-id">#' + escapeHtml(user.id) + '</td>'
+                + '<td><div class="admin-user-name"><strong>' + escapeHtml(user.fullName || "Chưa có họ tên") + '</strong>'
+                + '<small>@' + escapeHtml(user.userName || "") + '</small></div></td>'
+                + '<td class="admin-user-contact">' + contact + '</td>'
+                + '<td>' + escapeHtml(membership) + '</td><td>' + Number(user.points || 0).toLocaleString("vi-VN") + '</td>'
+                + '<td>' + roleControl + '</td></tr>';
+        }).join("");
+        const totalPages = Number(page?.totalPages || 0);
+        const currentPage = Number(page?.number || 0);
+        const pagination = totalPages > 1
+            ? '<div class="admin-user-pagination"><button class="admin-inline-button" type="button" data-user-page="' + (currentPage - 1) + '"'
+                + (page.first ? " disabled" : "") + '>Trước</button><span>Trang ' + (currentPage + 1) + ' / ' + totalPages + ' · '
+                + Number(page.totalElements || 0).toLocaleString("vi-VN") + ' người dùng</span><button class="admin-inline-button" type="button" data-user-page="'
+                + (currentPage + 1) + '"' + (page.last ? " disabled" : "") + '>Tiếp</button></div>'
+            : '<p class="admin-user-count">' + Number(page?.totalElements || 0).toLocaleString("vi-VN") + ' người dùng</p>';
+
+        return adminHeading("Quản lý người dùng", "Xem danh sách tài khoản, điểm thưởng và phân quyền hệ thống.", "", "")
+            + (users.length
+                ? '<div class="admin-table-wrap"><table class="admin-table admin-user-table"><thead><tr><th>Mã</th><th>Người dùng</th><th>Liên hệ</th><th>Hạng</th><th>Điểm</th><th>Vai trò</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+                    + pagination
+                : '<div class="admin-message"><strong>Chưa có người dùng</strong><p>Tài khoản đã đăng ký sẽ xuất hiện ở đây.</p></div>');
     }
 
     async function loadAdminData() {
         state.admin.error = "";
         nodes.adminContent.innerHTML = '<div class="admin-message"><span class="admin-spinner"></span><p>Đang tải dữ liệu quản trị…</p></div>';
         try {
-            const [orders, products, categories, brands, memberships] = await Promise.all([
+            const [orders, products, categories, brands, memberships, users] = await Promise.all([
                 window.emarketApi.getAllOrders(),
                 window.emarketApi.getProducts(),
                 window.emarketApi.getCategories(),
                 window.emarketApi.getBrands(),
-                window.emarketApi.getMemberships()
+                window.emarketApi.getMemberships(),
+                window.emarketApi.getUsers(state.admin.usersPage, 20)
             ]);
             state.admin.orders = orders;
             state.admin.products = products;
             state.admin.categories = categories;
             state.admin.brands = brands;
             state.admin.memberships = memberships;
+            state.admin.users = users;
         } catch (error) {
             state.admin.error = error.message || "Vui lòng kiểm tra kết nối hoặc quyền quản trị.";
         }
         renderAdminDashboard();
     }
 
+    async function loadAdminUsers(pageNumber) {
+        state.admin.usersPage = Math.max(0, Number(pageNumber) || 0);
+        state.admin.error = "";
+        nodes.adminContent.innerHTML = '<div class="admin-message"><span class="admin-spinner"></span><p>Đang tải danh sách người dùng…</p></div>';
+        try {
+            state.admin.users = await window.emarketApi.getUsers(state.admin.usersPage, 20);
+        } catch (error) {
+            state.admin.error = error.message || "Không thể tải danh sách người dùng.";
+        }
+        renderAdminDashboard();
+    }
+
     function openAdmin() {
         if (!window.emarketApi.getToken()) {
-            showToast("Đăng nhập tài khoản quản trị để tiếp tục.");
+            showToast("Đăng nhập tài khoản quản trị để tiếp tục.", "info");
             openAuth("login");
             return;
         }
         if (window.emarketApi.getRole() !== "ADMIN") {
-            showToast("Tài khoản hiện tại không có quyền quản trị.");
+            showToast("Tài khoản hiện tại không có quyền quản trị.", "error");
             return;
         }
         state.adminTab = "orders";
@@ -905,35 +1640,35 @@
                 };
                 if (state.adminEditing?.type === "product" && state.adminEditing.id != null) {
                     await window.emarketApi.updateProduct(state.adminEditing.id, payload);
-                    showToast("Đã cập nhật sản phẩm.");
+                    showToast("Đã cập nhật sản phẩm thành công.", "success");
                 } else {
                     await window.emarketApi.createProduct(payload);
-                    showToast("Đã tạo sản phẩm.");
+                    showToast("Đã tạo sản phẩm mới thành công.", "success");
                 }
             } else if (form.id === "adminCategoryForm") {
                 const payload = { name: values.name.trim(), description: values.description.trim() };
                 if (state.adminEditing?.type === "category" && state.adminEditing.id != null) {
                     await window.emarketApi.updateCategory(state.adminEditing.id, payload);
-                    showToast("Đã cập nhật danh mục.");
+                    showToast("Đã cập nhật danh mục thành công.", "success");
                 } else {
                     await window.emarketApi.createCategory(payload);
-                    showToast("Đã tạo danh mục.");
+                    showToast("Đã tạo danh mục mới thành công.", "success");
                 }
             } else if (form.id === "adminBrandForm") {
                 const payload = { name: values.name.trim(), country: values.country.trim(), logo: values.logo.trim() };
                 if (state.adminEditing?.type === "brand" && state.adminEditing.id != null) {
                     await window.emarketApi.updateBrand(state.adminEditing.id, payload);
-                    showToast("Đã cập nhật thương hiệu.");
+                    showToast("Đã cập nhật thương hiệu thành công.", "success");
                 } else {
                     await window.emarketApi.createBrand(payload);
-                    showToast("Đã tạo thương hiệu.");
+                    showToast("Đã tạo thương hiệu mới thành công.", "success");
                 }
             }
             state.adminEditing = null;
             await loadAdminData();
             if (form.id === "adminProductForm" || form.id === "adminCategoryForm" || form.id === "adminBrandForm") await loadProducts();
         } catch (error) {
-            showToast("Không thể lưu: " + error.message);
+            showToast("Không thể lưu: " + error.message, "error");
         }
     }
 
@@ -942,16 +1677,16 @@
             : type === "category" ? state.admin.categories.find((entry) => entry.id === id)
                 : state.admin.brands.find((entry) => entry.id === id);
         const label = item?.name || ("#" + id);
-        if (!window.confirm("Xóa " + label + "? Hành động này có thể bị từ chối nếu dữ liệu đang được tham chiếu.")) return;
+        if (!window.confirm("Xác nhận xóa " + label + "?")) return;
         try {
             if (type === "product") await window.emarketApi.deleteProduct(id);
             if (type === "category") await window.emarketApi.deleteCategory(id);
             if (type === "brand") await window.emarketApi.deleteBrand(id);
-            showToast("Đã xóa " + label + ".");
+            showToast("Đã xóa " + label + ".", "info");
             await loadAdminData();
             await loadProducts();
         } catch (error) {
-            showToast("Không thể xóa: " + error.message);
+            showToast("Không thể xóa: " + error.message, "error");
         }
     }
 
@@ -970,9 +1705,9 @@
             }
             state.cart.push(...pending);
             persistGuestCart();
-            if (pending.length) showToast("Một số sản phẩm trong giỏ khách chưa đồng bộ được. Hãy kiểm tra tồn kho.");
+            if (pending.length) showToast("Một số sản phẩm chưa đồng bộ được vào tài khoản. Hãy kiểm tra lại tồn kho.", "info");
         } catch (error) {
-            showToast(`Không thể tải giỏ hàng tài khoản: ${error.message}`);
+            showToast(`Không thể tải giỏ hàng tài khoản: ${error.message}`, "error");
         }
         renderCart();
     }
@@ -998,14 +1733,37 @@
 
     function updateAccountState() {
         const signedIn = Boolean(window.emarketApi.getToken());
-        const isAdmin = signedIn && window.emarketApi.getRole() === "ADMIN";
-        nodes.accountLabel.textContent = signedIn ? "Tài khoản" : "Thông tin";
-        nodes.accountButton.setAttribute("aria-label", signedIn ? "Tài khoản đã đăng nhập" : "Đăng nhập hoặc đăng ký");
+        const userName = window.emarketApi.getUserName();
+        const role = window.emarketApi.getRole();
+        const isAdmin = signedIn && role === "ADMIN";
+
+        if (nodes.accountLabel) {
+            nodes.accountLabel.textContent = signedIn ? (userName ? `@${userName}` : "Tài khoản") : "Tài khoản";
+        }
+        if (nodes.accountSubLabel) {
+            nodes.accountSubLabel.textContent = signedIn ? profileRoleLabel(role) : "Đăng nhập";
+        }
+        if (nodes.accountAvatarWrap) {
+            nodes.accountAvatarWrap.innerHTML = signedIn && userName
+                ? `<span class="user-init-avatar">${escapeHtml(userName.slice(0, 2).toUpperCase())}</span>`
+                : `<i data-lucide="user"></i>`;
+        }
+
+        if (nodes.dropdownUserHeader) {
+            nodes.dropdownUserHeader.classList.toggle("hidden", !signedIn);
+            if (nodes.dropdownUserName) nodes.dropdownUserName.textContent = userName ? `@${userName}` : "Tài khoản";
+            if (nodes.dropdownUserRole) nodes.dropdownUserRole.textContent = profileRoleLabel(role);
+        }
+
         document.querySelectorAll("[data-auth-open]").forEach((button) => button.classList.toggle("hidden", signedIn));
-        nodes.myOrdersButton.classList.toggle("hidden", !signedIn);
-        nodes.adminButton.classList.toggle("hidden", !isAdmin);
-        nodes.logoutButton.classList.toggle("hidden", !signedIn);
+        if (nodes.myProfileButton) nodes.myProfileButton.classList.toggle("hidden", !signedIn);
+        if (nodes.myOrdersButton) nodes.myOrdersButton.classList.toggle("hidden", !signedIn);
+        if (nodes.adminButton) nodes.adminButton.classList.toggle("hidden", !isAdmin);
+        if (nodes.logoutButton) nodes.logoutButton.classList.toggle("hidden", !signedIn);
+
+        if (!signedIn && state.view === "profile") setView("listing");
         if (!isAdmin && state.view === "admin") setView("listing");
+        refreshIcons();
     }
 
     async function handleAuthSubmit(event, type) {
@@ -1014,10 +1772,10 @@
         try {
             if (type === "login") {
                 await window.emarketApi.login(payload);
-                showToast("Đăng nhập thành công.");
+                showToast("Đăng nhập thành công! Chào mừng bạn trở lại.", "success");
             } else {
                 await window.emarketApi.register(payload);
-                showToast("Đăng ký thành công.");
+                showToast("Đăng ký tài khoản thành công!", "success");
             }
             updateAccountState();
             closeAuth();
@@ -1025,32 +1783,87 @@
             renderReviewForm();
             renderReviewList();
         } catch (error) {
-            showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`);
+            showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`, "error");
         }
     }
 
     function runSearch(value) {
         state.query = value.trim();
         state.productsPage = 0;
-        nodes.searchInput.value = state.query;
+        if (nodes.searchInput) nodes.searchInput.value = state.query;
+        if (nodes.searchClearButton) {
+            nodes.searchClearButton.classList.toggle("hidden", !state.query);
+        }
         setView("listing");
         renderProducts();
-        $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
+        const target = $("#products");
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resetAllFilters() {
+        state.query = "";
+        state.filter = "all";
+        state.categoryFilter = "";
+        state.brandFilter = "";
+        state.priceFilter = "all";
+        state.sortFilter = "default";
+        state.productsPage = 0;
+
+        if (nodes.searchInput) nodes.searchInput.value = "";
+        if (nodes.searchClearButton) nodes.searchClearButton.classList.add("hidden");
+        if (nodes.filterCategory) nodes.filterCategory.value = "";
+        if (nodes.filterBrand) nodes.filterBrand.value = "";
+        if (nodes.filterPrice) nodes.filterPrice.value = "all";
+        if (nodes.filterSort) nodes.filterSort.value = "default";
+
+        document.querySelectorAll(".tab").forEach((tab) => {
+            tab.classList.toggle("active", tab.dataset.filter === "all");
+        });
+
+        renderProducts();
     }
 
     function bindEvents() {
+        // Document delegation for all clickable elements
         document.addEventListener("click", (event) => {
             const filter = event.target.closest("[data-filter]");
             const pageButton = event.target.closest("[data-products-page]");
             const detail = event.target.closest("[data-detail]");
             const add = event.target.closest("[data-add]");
             const search = event.target.closest("[data-menu-search]");
-            const category = event.target.closest("[data-category]");
+            const categoryFilter = event.target.closest("[data-category-filter]");
             const authOpen = event.target.closest("[data-auth-open]");
             const buyNow = event.target.closest("[data-buy-now]");
             const retryProducts = event.target.closest("[data-retry-products]");
+            const removeFilter = event.target.closest("[data-remove-filter]");
+            const clearAllFilters = event.target.closest("#clearAllFiltersBtn") || event.target.closest("#emptyResetFilterBtn");
+            const continueShopping = event.target.closest("#cartContinueShopBtn");
+
+            if (continueShopping) closeCart();
 
             if (retryProducts) void loadProducts();
+
+            if (clearAllFilters) resetAllFilters();
+
+            if (removeFilter) {
+                const target = removeFilter.dataset.removeFilter;
+                if (target === "query") {
+                    state.query = "";
+                    if (nodes.searchInput) nodes.searchInput.value = "";
+                    if (nodes.searchClearButton) nodes.searchClearButton.classList.add("hidden");
+                } else if (target === "category") {
+                    state.categoryFilter = "";
+                    if (nodes.filterCategory) nodes.filterCategory.value = "";
+                } else if (target === "brand") {
+                    state.brandFilter = "";
+                    if (nodes.filterBrand) nodes.filterBrand.value = "";
+                } else if (target === "price") {
+                    state.priceFilter = "all";
+                    if (nodes.filterPrice) nodes.filterPrice.value = "all";
+                }
+                state.productsPage = 0;
+                renderProducts();
+            }
 
             if (filter) {
                 state.filter = filter.dataset.filter;
@@ -1058,210 +1871,437 @@
                 document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === filter));
                 renderProducts();
             }
+
             if (pageButton && !pageButton.disabled) {
                 state.productsPage = Number(pageButton.dataset.productsPage);
                 renderProducts();
-                $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
+                const target = $("#products");
+                if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
+
             if (detail) {
                 const product = state.products.find((item) => item.id === Number(detail.dataset.detail));
                 if (product) renderDetail(product);
             }
+
             if (add) addToCart(add.dataset.add);
+
             if (buyNow) {
                 void (async () => {
                     const added = await addToCart(buyNow.dataset.buyNow, false);
                     if (added) showCheckout();
                 })();
             }
-            if (search) runSearch(search.dataset.menuSearch);
-            if (category) runSearch(category.dataset.category);
+
+            if (search) {
+                if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
+                runSearch(search.dataset.menuSearch);
+            }
+
+            if (categoryFilter) {
+                state.categoryFilter = categoryFilter.dataset.categoryFilter;
+                if (nodes.filterCategory) nodes.filterCategory.value = state.categoryFilter;
+                state.productsPage = 0;
+                setView("listing");
+                renderProducts();
+                const target = $("#products");
+                if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+
             if (authOpen) openAuth(authOpen.dataset.authOpen);
         });
 
-        nodes.productDetail.addEventListener("click", (event) => {
-            const qty = event.target.closest("[data-qty]");
-            const editReview = event.target.closest("[data-edit-review]");
-            const deleteReview = event.target.closest("[data-delete-review]");
-            if (event.target.closest("#backToProducts")) {
+        // Search Input & Clear
+        if (nodes.searchInput) {
+            nodes.searchInput.addEventListener("input", () => {
+                if (nodes.searchClearButton) {
+                    nodes.searchClearButton.classList.toggle("hidden", !nodes.searchInput.value);
+                }
+            });
+        }
+
+        if (nodes.searchClearButton) {
+            nodes.searchClearButton.addEventListener("click", () => {
+                nodes.searchInput.value = "";
+                nodes.searchClearButton.classList.add("hidden");
+                runSearch("");
+            });
+        }
+
+        if (nodes.searchForm) {
+            nodes.searchForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+                runSearch(nodes.searchInput.value);
+            });
+        }
+
+        // Dropdown Filters
+        if (nodes.filterCategory) {
+            nodes.filterCategory.addEventListener("change", (event) => {
+                state.categoryFilter = event.target.value;
+                state.productsPage = 0;
+                renderProducts();
+            });
+        }
+
+        if (nodes.filterBrand) {
+            nodes.filterBrand.addEventListener("change", (event) => {
+                state.brandFilter = event.target.value;
+                state.productsPage = 0;
+                renderProducts();
+            });
+        }
+
+        if (nodes.filterPrice) {
+            nodes.filterPrice.addEventListener("change", (event) => {
+                state.priceFilter = event.target.value;
+                state.productsPage = 0;
+                renderProducts();
+            });
+        }
+
+        if (nodes.filterSort) {
+            nodes.filterSort.addEventListener("change", (event) => {
+                state.sortFilter = event.target.value;
+                state.productsPage = 0;
+                renderProducts();
+            });
+        }
+
+        if (nodes.resetFilterBtn) {
+            nodes.resetFilterBtn.addEventListener("click", resetAllFilters);
+        }
+
+        // Product Detail Events
+        if (nodes.productDetail) {
+            nodes.productDetail.addEventListener("click", (event) => {
+                const qty = event.target.closest("[data-qty]");
+                const editReview = event.target.closest("[data-edit-review]");
+                const deleteReview = event.target.closest("[data-delete-review]");
+
+                if (event.target.closest("#backToProducts") || event.target.closest("#breadcrumbHome")) {
+                    setView("listing");
+                    const target = $("#products");
+                    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+
+                if (qty && state.selectedProduct) {
+                    state.quantity = Math.min(state.selectedProduct.stock, Math.max(1, state.quantity + Number(qty.dataset.qty)));
+                    const detailQtyInput = $("#detailQuantity");
+                    if (detailQtyInput) detailQtyInput.value = state.quantity;
+                }
+
+                if (editReview) {
+                    state.editingReviewId = Number(editReview.dataset.editReview);
+                    renderReviewList();
+                }
+
+                if (event.target.closest("[data-cancel-review-edit]")) {
+                    state.editingReviewId = null;
+                    renderReviewList();
+                }
+
+                if (deleteReview && window.confirm("Bạn có chắc muốn xóa đánh giá này?")) {
+                    void (async () => {
+                        try {
+                            await window.emarketApi.deleteReview(deleteReview.dataset.deleteReview);
+                            showToast("Đã xóa đánh giá thành công.", "info");
+                            await loadProductReviews(state.selectedProduct.id);
+                        } catch (error) {
+                            showToast(`Không thể xóa đánh giá: ${error.message}`, "error");
+                        }
+                    })();
+                }
+            });
+
+            nodes.productDetail.addEventListener("submit", (event) => {
+                if (event.target.matches("#createReviewForm")) {
+                    void submitReviewForm(event);
+                    return;
+                }
+                const editForm = event.target.closest("[data-review-edit-form]");
+                if (editForm) void submitReviewForm(event, Number(editForm.dataset.reviewEditForm));
+            });
+        }
+
+        // Cart Drawer Events
+        if (nodes.cartItems) {
+            nodes.cartItems.addEventListener("click", (event) => {
+                const change = event.target.closest("[data-cart-change]");
+                const remove = event.target.closest("[data-cart-remove]");
+                if (change) changeCartQuantity(change.dataset.cartChange, change.dataset.delta);
+                if (remove) removeCartItem(remove.dataset.cartRemove);
+            });
+        }
+
+        if (nodes.cartButton) nodes.cartButton.addEventListener("click", openCart);
+        if (nodes.closeCart) nodes.closeCart.addEventListener("click", closeCart);
+        if (nodes.cartBackdrop) nodes.cartBackdrop.addEventListener("click", closeCart);
+
+        // Checkout Events
+        if (nodes.checkoutButton) nodes.checkoutButton.addEventListener("click", showCheckout);
+        if (nodes.closeCheckout) nodes.closeCheckout.addEventListener("click", closeCheckout);
+        if (nodes.checkoutBackdrop) nodes.checkoutBackdrop.addEventListener("click", closeCheckout);
+        if (nodes.checkoutForm) nodes.checkoutForm.addEventListener("submit", handleCheckoutSubmit);
+
+        // Profile Events
+        if (nodes.profileForm) nodes.profileForm.addEventListener("submit", handleProfileSubmit);
+        if (nodes.profileResetButton) nodes.profileResetButton.addEventListener("click", resetProfileForm);
+        if (nodes.profileRetryButton) nodes.profileRetryButton.addEventListener("click", () => void loadProfile());
+        if (nodes.profileBackButton) {
+            nodes.profileBackButton.addEventListener("click", () => {
                 setView("listing");
-                $("#products").scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-            if (qty) {
-                state.quantity = Math.min(state.selectedProduct.stock, Math.max(1, state.quantity + Number(qty.dataset.qty)));
-                $("#detailQuantity").value = state.quantity;
-            }
-            if (editReview) {
-                state.editingReviewId = Number(editReview.dataset.editReview);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        }
+
+        // Account / Auth Events
+        if (nodes.accountButton) {
+            nodes.accountButton.addEventListener("click", () => {
+                if (window.emarketApi.getToken()) void showProfile();
+                else openAuth("login");
+            });
+        }
+
+        if (nodes.heroLoginButton) nodes.heroLoginButton.addEventListener("click", () => openAuth("login"));
+        if (nodes.closeAuth) nodes.closeAuth.addEventListener("click", closeAuth);
+        if (nodes.authBackdrop) nodes.authBackdrop.addEventListener("click", closeAuth);
+        document.querySelectorAll("[data-auth-tab]").forEach((button) => {
+            button.addEventListener("click", () => setAuthTab(button.dataset.authTab));
+        });
+
+        if (nodes.loginForm) nodes.loginForm.addEventListener("submit", (event) => handleAuthSubmit(event, "login"));
+        if (nodes.registerForm) nodes.registerForm.addEventListener("submit", (event) => handleAuthSubmit(event, "register"));
+        if (nodes.myProfileButton) nodes.myProfileButton.addEventListener("click", () => void showProfile());
+        if (nodes.myOrdersButton) nodes.myOrdersButton.addEventListener("click", showMyOrders);
+        if (nodes.logoutButton) {
+            nodes.logoutButton.addEventListener("click", () => {
+                window.emarketApi.clearToken();
+                state.cart = [];
+                restoreGuestCart();
+                updateAccountState();
+                renderReviewForm();
                 renderReviewList();
-            }
-            if (event.target.closest("[data-cancel-review-edit]")) {
-                state.editingReviewId = null;
-                renderReviewList();
-            }
-            if (deleteReview && window.confirm("Bạn có chắc muốn xóa đánh giá này?")) {
-                void (async () => {
-                    try {
-                        await window.emarketApi.deleteReview(deleteReview.dataset.deleteReview);
-                        showToast("Đã xóa đánh giá.");
-                        await loadProductReviews(state.selectedProduct.id);
-                    } catch (error) {
-                        showToast(`Không thể xóa đánh giá: ${error.message}`);
-                    }
-                })();
-            }
-        });
+                showToast("Bạn đã đăng xuất thành công.", "info");
+            });
+        }
 
-        nodes.productDetail.addEventListener("submit", (event) => {
-            if (event.target.matches("#createReviewForm")) {
-                void submitReviewForm(event);
-                return;
-            }
-            const editForm = event.target.closest("[data-review-edit-form]");
-            if (editForm) void submitReviewForm(event, Number(editForm.dataset.reviewEditForm));
-        });
+        // Orders Modal
+        if (nodes.closeOrders) nodes.closeOrders.addEventListener("click", closeOrders);
+        if (nodes.ordersBackdrop) nodes.ordersBackdrop.addEventListener("click", closeOrders);
+        if (nodes.orderLookupButton) nodes.orderLookupButton.addEventListener("click", showMyOrders);
 
-        nodes.cartItems.addEventListener("click", (event) => {
-            const change = event.target.closest("[data-cart-change]");
-            const remove = event.target.closest("[data-cart-remove]");
-            if (change) changeCartQuantity(change.dataset.cartChange, change.dataset.delta);
-            if (remove) removeCartItem(remove.dataset.cartRemove);
-        });
+        // Catalog Panel
+        if (nodes.catalogToggle && nodes.catalogPanel) {
+            nodes.catalogToggle.addEventListener("click", () => nodes.catalogPanel.classList.add("open"));
+        }
+        if (nodes.closeCatalog && nodes.catalogPanel) {
+            nodes.closeCatalog.addEventListener("click", () => nodes.catalogPanel.classList.remove("open"));
+        }
 
-        nodes.searchForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            runSearch(nodes.searchInput.value);
-        });
-        nodes.cartButton.addEventListener("click", openCart);
-        nodes.closeCart.addEventListener("click", closeCart);
-        nodes.cartBackdrop.addEventListener("click", closeCart);
-        nodes.checkoutButton.addEventListener("click", showCheckout);
-        nodes.closeCheckout.addEventListener("click", closeCheckout);
-        nodes.checkoutBackdrop.addEventListener("click", closeCheckout);
-        nodes.checkoutForm.addEventListener("submit", handleCheckoutSubmit);
-        nodes.accountButton.addEventListener("click", () => {
-            if (window.emarketApi.getToken()) showMyOrders();
-            else openAuth("login");
-        });
-        nodes.heroLoginButton.addEventListener("click", () => openAuth("login"));
-        nodes.closeAuth.addEventListener("click", closeAuth);
-        nodes.authBackdrop.addEventListener("click", closeAuth);
-        document.querySelectorAll("[data-auth-tab]").forEach((button) => button.addEventListener("click", () => setAuthTab(button.dataset.authTab)));
-        nodes.loginForm.addEventListener("submit", (event) => handleAuthSubmit(event, "login"));
-        nodes.registerForm.addEventListener("submit", (event) => handleAuthSubmit(event, "register"));
-        nodes.myOrdersButton.addEventListener("click", showMyOrders);
-        nodes.logoutButton.addEventListener("click", () => {
-            window.emarketApi.clearToken();
-            state.cart = [];
-            restoreGuestCart();
-            updateAccountState();
-            renderReviewForm();
-            renderReviewList();
-            showToast("Bạn đã đăng xuất.");
-        });
-        nodes.closeOrders.addEventListener("click", closeOrders);
-        nodes.ordersBackdrop.addEventListener("click", closeOrders);
-        nodes.catalogToggle.addEventListener("click", () => nodes.catalogPanel.classList.add("open"));
-        nodes.closeCatalog.addEventListener("click", () => nodes.catalogPanel.classList.remove("open"));
-        nodes.scrollTopButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
-        nodes.orderLookupButton.addEventListener("click", showMyOrders);
-        nodes.adminButton.addEventListener("click", openAdmin);
-        nodes.backToStore.addEventListener("click", () => {
-            setView("listing");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-        nodes.adminRefresh.addEventListener("click", () => void loadAdminData());
-        nodes.adminTabs.addEventListener("click", (event) => {
-            const tab = event.target.closest("[data-admin-tab]");
-            if (!tab) return;
-            state.adminTab = tab.dataset.adminTab;
-            state.adminEditing = null;
-            renderAdminDashboard();
-        });
-        nodes.adminContent.addEventListener("click", async (event) => {
-            if (event.target.closest("[data-admin-retry]")) {
-                await loadAdminData();
-                return;
-            }
-            if (event.target.closest("[data-admin-cancel]")) {
+        // Scroll to top
+        if (nodes.scrollTopButton) {
+            nodes.scrollTopButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+            window.addEventListener("scroll", () => {
+                if (window.scrollY > 400) {
+                    nodes.scrollTopButton.classList.add("visible");
+                } else {
+                    nodes.scrollTopButton.classList.remove("visible");
+                }
+            });
+        }
+
+        // Mobile Bottom Nav
+        if (nodes.mobNavCatalog) {
+            nodes.mobNavCatalog.addEventListener("click", () => {
+                if (nodes.catalogPanel) nodes.catalogPanel.classList.add("open");
+            });
+        }
+        if (nodes.mobNavSearch) {
+            nodes.mobNavSearch.addEventListener("click", () => {
+                setView("listing");
+                if (nodes.searchInput) {
+                    nodes.searchInput.focus();
+                    nodes.searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            });
+        }
+        if (nodes.mobNavCart) nodes.mobNavCart.addEventListener("click", openCart);
+        if (nodes.mobNavAccount) {
+            nodes.mobNavAccount.addEventListener("click", () => {
+                if (window.emarketApi.getToken()) void showProfile();
+                else openAuth("login");
+            });
+        }
+
+        // Admin Management
+        if (nodes.adminButton) nodes.adminButton.addEventListener("click", openAdmin);
+        if (nodes.backToStore) {
+            nodes.backToStore.addEventListener("click", () => {
+                setView("listing");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        }
+        if (nodes.adminRefresh) nodes.adminRefresh.addEventListener("click", () => void loadAdminData());
+        if (nodes.adminTabs) {
+            nodes.adminTabs.addEventListener("click", (event) => {
+                const tab = event.target.closest("[data-admin-tab]");
+                if (!tab) return;
+                state.adminTab = tab.dataset.adminTab;
                 state.adminEditing = null;
                 renderAdminDashboard();
-                return;
-            }
-            const addButton = event.target.closest("[data-admin-add]");
-            if (addButton) {
-                state.adminEditing = { type: addButton.dataset.adminAdd, id: null };
-                renderAdminDashboard();
-                return;
-            }
-            const editButton = event.target.closest("[data-admin-edit-type]");
-            if (editButton) {
-                state.adminEditing = {
-                    type: editButton.dataset.adminEditType,
-                    id: Number(editButton.dataset.adminEditId)
-                };
-                renderAdminDashboard();
-                return;
-            }
-            const deleteButton = event.target.closest("[data-admin-delete-type]");
-            if (deleteButton) {
-                await deleteAdminItem(deleteButton.dataset.adminDeleteType, Number(deleteButton.dataset.adminDeleteId));
-                return;
-            }
-            const updateOrderButton = event.target.closest("[data-order-update]");
-            if (updateOrderButton) {
-                const orderId = Number(updateOrderButton.dataset.orderUpdate);
-                const select = nodes.adminContent.querySelector('[data-order-status="' + orderId + '"]');
-                if (!select?.value) return;
-                updateOrderButton.disabled = true;
-                try {
-                    await window.emarketApi.updateOrderStatus(orderId, select.value);
-                    showToast("Đã cập nhật trạng thái đơn hàng.");
+            });
+        }
+
+        if (nodes.adminContent) {
+            nodes.adminContent.addEventListener("click", async (event) => {
+                if (event.target.closest("[data-admin-retry]")) {
                     await loadAdminData();
-                } catch (error) {
-                    showToast("Không thể cập nhật đơn hàng: " + error.message);
-                    updateOrderButton.disabled = false;
+                    return;
                 }
+                const userPageButton = event.target.closest("[data-user-page]");
+                if (userPageButton && !userPageButton.disabled) {
+                    await loadAdminUsers(Number(userPageButton.dataset.userPage));
+                    return;
+                }
+                const updateUserRoleButton = event.target.closest("[data-user-role-update]");
+                if (updateUserRoleButton) {
+                    const userId = Number(updateUserRoleButton.dataset.userRoleUpdate);
+                    const roleSelect = nodes.adminContent.querySelector('[data-user-role-select="' + userId + '"]');
+                    const user = state.admin.users?.content?.find((item) => Number(item.id) === userId);
+                    if (!roleSelect || !user || roleSelect.value === user.role) {
+                        showToast("Chưa có thay đổi vai trò.", "info");
+                        return;
+                    }
+
+                    updateUserRoleButton.disabled = true;
+                    updateUserRoleButton.textContent = "Đang lưu…";
+                    try {
+                        await window.emarketApi.updateUserRole(userId, roleSelect.value);
+                        showToast("Đã cập nhật vai trò người dùng thành công.", "success");
+                        await loadAdminUsers(state.admin.users?.number || 0);
+                    } catch (error) {
+                        showToast("Không thể cập nhật vai trò: " + error.message, "error");
+                        updateUserRoleButton.disabled = false;
+                        updateUserRoleButton.textContent = "Lưu";
+                    }
+                    return;
+                }
+                if (event.target.closest("[data-admin-cancel]")) {
+                    state.adminEditing = null;
+                    renderAdminDashboard();
+                    return;
+                }
+                const addButton = event.target.closest("[data-admin-add]");
+                if (addButton) {
+                    state.adminEditing = { type: addButton.dataset.adminAdd, id: null };
+                    renderAdminDashboard();
+                    return;
+                }
+                const editButton = event.target.closest("[data-admin-edit-type]");
+                if (editButton) {
+                    state.adminEditing = {
+                        type: editButton.dataset.adminEditType,
+                        id: Number(editButton.dataset.adminEditId)
+                    };
+                    renderAdminDashboard();
+                    return;
+                }
+                const deleteButton = event.target.closest("[data-admin-delete-type]");
+                if (deleteButton) {
+                    await deleteAdminItem(deleteButton.dataset.adminDeleteType, Number(deleteButton.dataset.adminDeleteId));
+                    return;
+                }
+                const updateOrderButton = event.target.closest("[data-order-update]");
+                if (updateOrderButton) {
+                    const orderId = Number(updateOrderButton.dataset.orderUpdate);
+                    const select = nodes.adminContent.querySelector('[data-order-status="' + orderId + '"]');
+                    if (!select?.value) return;
+                    updateOrderButton.disabled = true;
+                    try {
+                        await window.emarketApi.updateOrderStatus(orderId, select.value);
+                        showToast("Đã cập nhật trạng thái đơn hàng.", "success");
+                        await loadAdminData();
+                    } catch (error) {
+                        showToast("Không thể cập nhật đơn hàng: " + error.message, "error");
+                        updateOrderButton.disabled = false;
+                    }
+                }
+            });
+
+            nodes.adminContent.addEventListener("submit", (event) => {
+                void submitAdminForm(event);
+            });
+        }
+
+        // Close drawers / modals on Escape key
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeCart();
+                closeCheckout();
+                closeAuth();
+                closeOrders();
+                if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
             }
-        });
-        nodes.adminContent.addEventListener("submit", (event) => {
-            void submitAdminForm(event);
         });
     }
 
     async function loadProducts() {
-        const status = $("#dataStatus");
-        status.textContent = "Đang tải sản phẩm...";
+        const status = nodes.dataStatus || $("#dataStatus");
+        if (status) status.innerHTML = `<div class="loading-inline"><div class="admin-spinner"></div> <span>Đang nạp dữ liệu sản phẩm từ hệ thống...</span></div>`;
+        refreshIcons();
+
         try {
             state.products = await window.emarketApi.getProducts();
-            status.textContent = state.products.length ? "" : "Chưa có sản phẩm trong hệ thống.";
+            if (status) status.textContent = state.products.length ? "" : "Chưa có sản phẩm trong hệ thống.";
         } catch (error) {
             state.products = [];
-            status.innerHTML = `Không thể tải sản phẩm: ${escapeHtml(error.message)} <button class="admin-inline-button" type="button" data-retry-products>Thử lại</button>`;
+            if (status) {
+                status.innerHTML = `
+                    <div class="error-notice">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Không thể tải sản phẩm: ${escapeHtml(error.message)}</span>
+                        <button class="admin-inline-button" type="button" data-retry-products>
+                            <i data-lucide="refresh-cw"></i> Thử lại
+                        </button>
+                    </div>
+                `;
+            }
         }
+
         try {
-            state.categories = await window.emarketApi.getCategories();
+            const [categories, brands] = await Promise.all([
+                window.emarketApi.getCategories(),
+                window.emarketApi.getBrands()
+            ]);
+            state.categories = categories || [];
+            state.brands = brands || [];
         } catch (error) {
             state.categories = [...new Map(state.products
-                .filter((product) => product.category?.id != null)
-                .map((product) => [product.category.id, product.category])).values()];
+                .filter((p) => p.category?.id != null)
+                .map((p) => [p.category.id, p.category])).values()];
+            state.brands = [...new Map(state.products
+                .filter((p) => p.brand?.id != null)
+                .map((p) => [p.brand.id, p.brand])).values()];
         }
+
         renderCategories();
         renderCategoryMenus();
-        renderFooter();
+        renderBrandFilters();
         renderProducts();
         renderDeal();
         renderCategorySections();
+        refreshIcons();
     }
 
     async function init() {
-        renderLayout();
         bindEvents();
         renderCart();
         updateAccountState();
         await loadProducts();
         restoreGuestCart();
         if (window.emarketApi.getToken()) await loadAccountCart();
+        refreshIcons();
     }
 
     init();

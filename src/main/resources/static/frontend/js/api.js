@@ -144,6 +144,9 @@
 
             return products.map(normalizeProduct);
         },
+        async getProduct(productId) {
+            return normalizeProduct(await request(`/api/products/${productId}`));
+        },
         async getCart() {
             return normalizeCart(await request("/api/cart"));
         },
@@ -170,6 +173,27 @@
         },
         async getMyOrders() {
             return request("/api/orders/me");
+        },
+        async getOrder(orderId) {
+            return request(`/api/orders/${orderId}`);
+        },
+        async getProfile() {
+            return request("/api/user/profile");
+        },
+        async updateProfile(payload) {
+            return request("/api/user/profile", {
+                method: "PATCH",
+                body: JSON.stringify(payload)
+            });
+        },
+        async getUsers(page = 0, size = 20) {
+            return request(`/api/user?page=${page}&size=${size}`);
+        },
+        async updateUserRole(userId, role) {
+            return request(`/api/user/profile/${userId}`, {
+                method: "PATCH",
+                body: JSON.stringify({ role })
+            });
         },
         async getAllOrders() {
             return request("/api/orders");

@@ -1,6 +1,7 @@
 package E_Market_Management.user.dto;
 
 import E_Market_Management.membership.dto.MembershipResponse;
+import E_Market_Management.user.entity.ROLE;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class UserResponse {
     private String fullName;
     private String email;
     private String phone;
-    private String role;
+    private ROLE role;
     private Integer points;
 
     private MembershipResponse membership;

@@ -61,6 +61,14 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
+                    "/api/user/profile"
+                ).authenticated()
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/user/profile"
+                ).authenticated()
+                .requestMatchers(
+                    HttpMethod.GET,
                     "/api/reviews",
                     "/api/reviews/**"
                 ).permitAll()
@@ -131,6 +139,10 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.DELETE,
                     "/api/products/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/user/profile/{id}"
                 ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

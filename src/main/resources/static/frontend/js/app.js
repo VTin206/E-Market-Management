@@ -128,6 +128,22 @@
         navQuickCategories: $("#navQuickCategories"),
         toast: $("#toast"),
         scrollTopButton: $("#scrollTopButton"),
+        hero: $(".hero"),
+        heroCopy: $(".hero-copy"),
+        heroTitleMain: $("[data-hero-title-main]"),
+        heroTitleAccent: $("[data-hero-title-accent]"),
+        heroBadge: $("[data-hero-badge]"),
+        heroDescription: $("[data-hero-description]"),
+        heroCta: $("[data-hero-cta]"),
+        heroCtaLabel: $("[data-hero-cta-label]"),
+        heroCardBadge: $("[data-hero-card-badge]"),
+        heroProductImage: $("[data-hero-product-image]"),
+        heroProductName: $("[data-hero-product-name]"),
+        heroProductMeta: $("[data-hero-product-meta]"),
+        heroProductPrice: $("[data-hero-product-price]"),
+        heroAnnouncement: $("[data-hero-announcement]"),
+        heroPrevious: $("[data-hero-previous]"),
+        heroNext: $("[data-hero-next]"),
         heroLoginButton: $("#heroLoginButton"),
         orderLookupButton: $("#orderLookupButton"),
         mobNavHome: $("#mobNavHome"),
@@ -137,6 +153,38 @@
         mobNavAccount: $("#mobNavAccount"),
         mobCartCount: $("#mobCartCount")
     };
+
+    const heroSlides = [
+        {
+            badge: "100% SẢN PHẨM CHÍNH HÃNG",
+            title: "Công Nghệ Đỉnh Cao",
+            accent: "Nâng Tầm Trải Nghiệm",
+            description: "Khám phá thế giới điện thoại và thiết bị công nghệ chính hãng mới nhất. Đặt mua nhanh chóng, giá tốt mỗi ngày, bảo hành 12 tháng và hỗ trợ trả góp 0% lãi suất.",
+            cta: "Khám phá sản phẩm",
+            ctaHref: "#products",
+            ctaIcon: "shopping-cart",
+            cardBadge: "SẢN PHẨM HOT",
+            productName: "iPhone 15 Pro Max",
+            productMeta: "Titan Tự Nhiên · Chip A17 Pro",
+            productPrice: "Từ 29.990.000đ",
+            imageAlt: "iPhone 15 Pro Max"
+        },
+        {
+            badge: "ƯU ĐÃI CÔNG NGHỆ MỖI NGÀY",
+            title: "Săn Deal Công Nghệ",
+            accent: "Giá Tốt Mỗi Ngày",
+            description: "Khám phá các chương trình khuyến mãi đang diễn ra, chọn sản phẩm yêu thích và đặt hàng nhanh chóng ngay hôm nay.",
+            cta: "Xem khuyến mãi",
+            ctaHref: "#deals",
+            ctaIcon: "flame",
+            cardBadge: "FLASH SALE",
+            productName: "Ưu đãi công nghệ",
+            productMeta: "Nhiều sản phẩm chính hãng đang chờ bạn",
+            productPrice: "Xem ưu đãi hôm nay",
+            imageAlt: "Sản phẩm công nghệ nổi bật"
+        }
+    ];
+    let activeHeroSlide = 0;
 
     function icon(name, size = 18) {
         return `<i data-lucide="${name}" style="width:${size}px;height:${size}px"></i>`;
@@ -153,6 +201,63 @@
             .replaceAll(">", "&gt;")
             .replaceAll('"', "&quot;")
             .replaceAll("'", "&#039;");
+    }
+
+    function showHeroSlide(index) {
+        if (!nodes.hero || !heroSlides.length) return;
+        activeHeroSlide = (index + heroSlides.length) % heroSlides.length;
+        const slide = heroSlides[activeHeroSlide];
+
+        nodes.heroBadge.textContent = slide.badge;
+        nodes.heroTitleMain.textContent = slide.title;
+        nodes.heroTitleAccent.textContent = slide.accent;
+        nodes.heroDescription.textContent = slide.description;
+        nodes.heroCta.href = slide.ctaHref;
+        nodes.heroCtaLabel.textContent = slide.cta;
+        nodes.heroCardBadge.textContent = slide.cardBadge;
+        nodes.heroProductImage.alt = slide.imageAlt;
+        nodes.heroProductName.textContent = slide.productName;
+        nodes.heroProductMeta.textContent = slide.productMeta;
+        nodes.heroProductPrice.textContent = slide.productPrice;
+        nodes.heroAnnouncement.textContent = `Banner ${activeHeroSlide + 1} trên ${heroSlides.length}: ${slide.title} ${slide.accent}`;
+
+        document.querySelectorAll("[data-hero-slide]").forEach((button, buttonIndex) => {
+            const isActive = buttonIndex === activeHeroSlide;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
+
+        if (nodes.heroCopy) {
+            nodes.heroCopy.classList.remove("is-changing");
+            void nodes.heroCopy.offsetWidth;
+            nodes.heroCopy.classList.add("is-changing");
+        }
+    }
+
+    function initHeroCarousel() {
+        if (!nodes.hero || heroSlides.length < 2) return;
+        let pointerPaused = false;
+        let focusPaused = false;
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const pauseWhenInteracting = () => pointerPaused || focusPaused;
+
+        nodes.heroPrevious.addEventListener("click", () => showHeroSlide(activeHeroSlide - 1));
+        nodes.heroNext.addEventListener("click", () => showHeroSlide(activeHeroSlide + 1));
+        document.querySelectorAll("[data-hero-slide]").forEach((button) => {
+            button.addEventListener("click", () => showHeroSlide(Number(button.dataset.heroSlide)));
+        });
+        nodes.hero.addEventListener("pointerenter", () => { pointerPaused = true; });
+        nodes.hero.addEventListener("pointerleave", () => { pointerPaused = false; });
+        nodes.hero.addEventListener("focusin", () => { focusPaused = true; });
+        nodes.hero.addEventListener("focusout", (event) => {
+            if (!nodes.hero.contains(event.relatedTarget)) focusPaused = false;
+        });
+
+        if (!reducedMotion) {
+            window.setInterval(() => {
+                if (!pauseWhenInteracting()) showHeroSlide(activeHeroSlide + 1);
+            }, 6000);
+        }
     }
 
     function formatMoney(value) {
@@ -2296,6 +2401,7 @@
 
     async function init() {
         bindEvents();
+        initHeroCarousel();
         renderCart();
         updateAccountState();
         await loadProducts();

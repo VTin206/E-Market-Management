@@ -7,7 +7,7 @@
     <meta name="description" content="E-Market - Điện thoại, laptop, máy tính bảng và phụ kiện công nghệ chính hãng. Giá tốt nhất, bảo hành chính hãng, trả góp 0%, giao hàng siêu tốc.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -31,13 +31,7 @@
         <div class="header-main shell">
             <!-- Brand Logo -->
             <a class="brand" href="#home" aria-label="E-Market Store">
-                <div class="brand-mark">
-                    <i data-lucide="zap"></i>
-                </div>
-                <div class="brand-text">
-                    <strong>E-Market</strong>
-                    <small>Tech & Phone Store</small>
-                </div>
+                <img class="brand-logo-image" src="assets/emarket-logo.png" alt="E-Market - Mua sắm trực tuyến dễ dàng">
             </a>
 
             <!-- Catalog Toggle Button -->
@@ -152,12 +146,12 @@
         <section class="hero shell listing-view">
             <div class="hero-content">
                 <div class="hero-copy">
-                    <span class="eyebrow"><i data-lucide="shield-check"></i> 100% SẢN PHẨM CHÍNH HÃNG</span>
-                    <h1>Công Nghệ Đỉnh Cao <br><span>Nâng Tầm Trải Nghiệm</span></h1>
-                    <p>Khám phá thế giới điện thoại và thiết bị công nghệ chính hãng mới nhất. Đặt mua nhanh chóng, giá tốt mỗi ngày, bảo hành 12 tháng và hỗ trợ trả góp 0% lãi suất.</p>
+                    <span class="eyebrow"><i data-lucide="shield-check"></i> <span data-hero-badge>100% SẢN PHẨM CHÍNH HÃNG</span></span>
+                    <h1><span class="hero-title-main" data-hero-title-main>Công Nghệ Đỉnh Cao</span><br><span data-hero-title-accent>Nâng Tầm Trải Nghiệm</span></h1>
+                    <p data-hero-description>Khám phá thế giới điện thoại và thiết bị công nghệ chính hãng mới nhất. Đặt mua nhanh chóng, giá tốt mỗi ngày, bảo hành 12 tháng và hỗ trợ trả góp 0% lãi suất.</p>
                     <div class="hero-actions">
-                        <a class="primary-button hero-cta" href="#products">
-                            <i data-lucide="shopping-cart"></i> Khám phá sản phẩm
+                        <a class="primary-button hero-cta" href="#products" data-hero-cta>
+                            <i data-lucide="shopping-cart"></i> <span data-hero-cta-label>Khám phá sản phẩm</span>
                         </a>
                         <button class="ghost-button" id="heroLoginButton" type="button">
                             <i data-lucide="user"></i> Đăng nhập / Đăng ký
@@ -179,15 +173,24 @@
                             <span>Đổi trả 1-1</span>
                         </div>
                     </div>
+                    <div class="hero-controls" role="group" aria-label="Điều khiển banner khuyến mãi">
+                        <button class="hero-arrow" type="button" data-hero-previous aria-label="Banner trước"><span aria-hidden="true">←</span></button>
+                        <div class="hero-indicators">
+                            <button class="hero-indicator is-active" type="button" data-hero-slide="0" aria-label="Banner sản phẩm nổi bật" aria-pressed="true"></button>
+                            <button class="hero-indicator" type="button" data-hero-slide="1" aria-label="Banner khuyến mãi" aria-pressed="false"></button>
+                        </div>
+                        <button class="hero-arrow" type="button" data-hero-next aria-label="Banner tiếp theo"><span aria-hidden="true">→</span></button>
+                        <span class="sr-only" data-hero-announcement aria-live="polite">Banner 1 trên 2</span>
+                    </div>
                 </div>
                 <div class="hero-banner-visual">
                     <div class="hero-device-card">
-                        <div class="hero-card-badge">HOT 2026</div>
-                        <img src="assets/product-iphone.svg" alt="iPhone 15 Pro Max" class="hero-product-img">
+                        <div class="hero-card-badge" data-hero-card-badge>HOT 2026</div>
+                        <img src="assets/product-iphone.svg" alt="iPhone 15 Pro Max" class="hero-product-img" data-hero-product-image>
                         <div class="hero-device-info">
-                            <strong>iPhone 15 Pro Max</strong>
-                            <span>Titan Tự Nhiên · Chip A17 Pro</span>
-                            <div class="hero-device-price">Từ 29.990.000đ</div>
+                            <strong data-hero-product-name>iPhone 15 Pro Max</strong>
+                            <span data-hero-product-meta>Titan Tự Nhiên · Chip A17 Pro</span>
+                            <div class="hero-device-price" data-hero-product-price>Từ 29.990.000đ</div>
                         </div>
                     </div>
                 </div>
@@ -461,8 +464,7 @@
             <div class="footer-top">
                 <div class="footer-col brand-col">
                     <div class="footer-brand">
-                        <div class="brand-mark"><i data-lucide="zap"></i></div>
-                        <strong>E-Market</strong>
+                        <img class="brand-logo-image brand-logo-footer" src="assets/emarket-logo.png" alt="E-Market - Mua sắm trực tuyến dễ dàng">
                     </div>
                     <p>Hệ thống bán lẻ điện thoại, máy tính bảng và thiết bị công nghệ chính hãng hàng đầu. Cam kết chất lượng, tận tâm phục vụ.</p>
                     <div class="footer-hotline">

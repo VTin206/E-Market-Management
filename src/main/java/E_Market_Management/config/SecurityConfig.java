@@ -148,6 +148,11 @@ public class SecurityConfig {
                     HttpMethod.PATCH,
                     "/api/user/profile/{id}"
                 ).hasRole("ADMIN")
+                .requestMatchers(
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

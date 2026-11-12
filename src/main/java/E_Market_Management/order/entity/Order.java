@@ -2,6 +2,7 @@ package E_Market_Management.order.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +20,9 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "tracking_code", nullable = false, unique = true, updatable = false)
+    private UUID trackingCode;
 
     @Column(nullable = false)
     private String customerName;

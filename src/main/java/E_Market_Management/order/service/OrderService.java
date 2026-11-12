@@ -14,8 +14,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
@@ -149,6 +151,7 @@ public class OrderService {
         Order order = Order.builder()
             .user(user)
             .customerName(request.getCustomerName())
+            .trackingCode(UUID.randomUUID())
             .phone(request.getPhone())
             .address(request.getAddress())
             .status(STATUS.PENDING)
@@ -319,5 +322,14 @@ public class OrderService {
         }
 
         return orderMapper.toResponse(orderRepository.save(order), items);
+    }
+
+    @Transactional 
+    public OrderResponse trackOrder(UUID trackingCode) {
+        Order order = orderRepository.findByTrackingCode(trackingCode)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        List<OrderItem> items = orderItemRepository.findAllByOrder_Id(order.getId());
+        return orderMapper.toResponse(order, items);
     }
 }

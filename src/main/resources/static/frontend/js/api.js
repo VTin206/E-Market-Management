@@ -204,6 +204,11 @@
                 body: JSON.stringify({ status })
             });
         },
+        async cancelOrder(orderId) {
+            return request(`/api/orders/${orderId}/cancel`, {
+                method: "POST"
+            });
+        },
         async createProduct(payload) {
             return request("/api/products", {
                 method: "POST",

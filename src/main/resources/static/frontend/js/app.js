@@ -1416,6 +1416,23 @@
         return labels[String(method || "").toUpperCase()] || "Chưa có thông tin";
     }
 
+    async function cancelCustomerOrder(button) {
+        const orderId = button.dataset.cancelOrder;
+        if (!window.confirm(`Bạn chắc chắn muốn hủy đơn hàng #${orderId}?`)) return;
+
+        button.disabled = true;
+        button.textContent = "Đang hủy...";
+        try {
+            await window.emarketApi.cancelOrder(orderId);
+            showToast("Đã hủy đơn hàng thành công.", "success");
+            await showMyOrders();
+        } catch (error) {
+            showToast(`Không thể hủy đơn hàng: ${error.message}`, "error");
+            button.disabled = false;
+            button.textContent = "Hủy đơn";
+        }
+    }
+
     async function showMyOrders() {
         if (!window.emarketApi.getToken()) {
             showToast("Đăng nhập để xem danh sách đơn hàng của bạn.", "info");
@@ -1457,6 +1474,11 @@
                             <span>Tổng thanh toán:</span>
                             <strong>${formatMoney(order.totalAmount)}</strong>
                         </div>
+                        ${String(order.status || "").toUpperCase() === "PENDING" ? `
+                            <div class="order-card-actions">
+                                <button class="order-cancel-button" type="button" data-cancel-order="${escapeHtml(order.id)}">Hủy đơn</button>
+                            </div>
+                        ` : ""}
                     </article>
                 `;
             }).join("") : `
@@ -1942,6 +1964,12 @@
     function bindEvents() {
         // Document delegation for all clickable elements
         document.addEventListener("click", (event) => {
+            const cancelOrderButton = event.target.closest("[data-cancel-order]");
+            if (cancelOrderButton) {
+                void cancelCustomerOrder(cancelOrderButton);
+                return;
+            }
+
             const filter = event.target.closest("[data-filter]");
             const pageButton = event.target.closest("[data-products-page]");
             const detail = event.target.closest("[data-detail]");

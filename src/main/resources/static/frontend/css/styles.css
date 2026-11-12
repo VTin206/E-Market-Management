@@ -2539,6 +2539,30 @@ i[data-lucide] {
     font-weight: 800;
     color: #dc2626;
 }
+.order-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+.order-cancel-button {
+    border: 1px solid var(--danger);
+    border-radius: var(--radius-md);
+    padding: 7px 12px;
+    color: var(--danger-dark);
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.order-cancel-button:hover:not(:disabled) {
+    color: #fff;
+    background: var(--danger);
+}
+.order-cancel-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
 
 /* ==========================================================================
    USER PROFILE VIEW

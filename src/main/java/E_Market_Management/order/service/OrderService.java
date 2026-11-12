@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
@@ -245,11 +246,23 @@ public class OrderService {
         }
 
         boolean justCompleted = currentStatus != STATUS.COMPLETED && nextStatus == STATUS.COMPLETED;
+        boolean justCancelled = currentStatus != STATUS.CANCELLED && nextStatus == STATUS.CANCELLED;
 
         order.setStatus(nextStatus);
 
         if(justCompleted) {
             awardPoint(order);
+        }
+
+        if(justCancelled) {
+            List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
+            for(OrderItem item : items) {
+                Product product = item.getProduct();
+                int currentStock = product.getStock();
+                int restock = item.getQuantity();
+                product.setStock(currentStock + restock);
+                productRepository.save(product);
+            }
         }
 
         orderRepository.save(order);
@@ -276,5 +289,35 @@ public class OrderService {
         }
 
         return orderMapper.toResponse(order, order.getOrderItems());
+    }
+
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        if (order.getUser() == null || !Objects.equals(order.getUser().getId(), userId)) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Bạn không có quyền hủy đơn hàng này!"
+            );
+        }
+
+        if (order.getStatus() != STATUS.PENDING) {
+            throw new ConflictException("Chỉ hủy được đơn ở trạng thái PENDING");
+        }
+
+        order.setStatus(STATUS.CANCELLED);
+
+        List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
+        for(OrderItem item : items) {
+            Product product = item.getProduct();
+            int currentStock = product.getStock();
+            int restock = item.getQuantity();
+            product.setStock(currentStock + restock);
+            productRepository.save(product);
+        }
+
+        return orderMapper.toResponse(orderRepository.save(order), items);
     }
 }

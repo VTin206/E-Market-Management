@@ -95,4 +95,16 @@ public class OrderController {
             orderService.updateStatus(request, orderId)
         );
     }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(
+        @PathVariable("id") Long orderId,
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails.getId();
+        return ResponseEntity.ok(
+            orderService.cancelOrder(orderId, userId)
+        );
+    }
+
 }

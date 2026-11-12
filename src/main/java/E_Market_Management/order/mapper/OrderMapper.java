@@ -40,6 +40,7 @@ public class OrderMapper {
             .totalAmount(order.getTotalAmount())
             .status(order.getStatus().name())
             .createdAt(order.getCreatedAt())
+            .paymentMethod(order.getPayment() != null ? order.getPayment().getMethodName() : null)
             .items(itemResponses)
             .build();
     }

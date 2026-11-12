@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import E_Market_Management.order.entity.METHOD;
 import lombok.*;
 
 @Data
@@ -19,6 +20,7 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private String status;
     private LocalDateTime createdAt;
+    private METHOD paymentMethod;
 
     private List<OrderItemResponse> items;
 }

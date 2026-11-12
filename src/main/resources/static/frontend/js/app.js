@@ -1357,6 +1357,7 @@
             customerName: form.customerName.trim(),
             phone: form.phone.trim(),
             address: form.address.trim(),
+            paymentMethod: form.paymentMethod,
             items: state.cart.map((item) => ({ productId: item.product.id, quantity: item.quantity }))
         };
 
@@ -1407,6 +1408,14 @@
         return labels[value] || status || "Đang xử lý";
     }
 
+    function paymentMethodLabel(method) {
+        const labels = {
+            CASH: "Tiền mặt khi nhận hàng",
+            BANK_TRANSFER: "Chuyển khoản ngân hàng"
+        };
+        return labels[String(method || "").toUpperCase()] || "Chưa có thông tin";
+    }
+
     async function showMyOrders() {
         if (!window.emarketApi.getToken()) {
             showToast("Đăng nhập để xem danh sách đơn hàng của bạn.", "info");
@@ -1435,6 +1444,7 @@
                             </span>
                         </div>
                         <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
+                        <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))}</small>
                         <div class="order-card-items">
                             ${(order.items || []).map((item) => `
                                 <div class="order-sub-item">
@@ -1526,6 +1536,7 @@
                     + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span></div>'
                     + '<div class="admin-order-meta"><span>📞 ' + escapeHtml(order.phone || "Chưa có SĐT") + '</span><span>🕒 '
                     + escapeHtml(orderDate(order.createdAt)) + '</span><span class="admin-order-address">📍 ' + escapeHtml(order.address || "Chưa có địa chỉ") + '</span></div>'
+                    + '<div class="admin-order-payment">Thanh toán: ' + escapeHtml(paymentMethodLabel(order.paymentMethod)) + '</div>'
                     + '<div class="admin-order-items">' + ((order.items || []).map((item) =>
                         '<div><span>' + escapeHtml(item.product?.name || "Sản phẩm") + ' × ' + (Number(item.quantity) || 0)
                         + '</span><strong>' + formatMoney(Number(item.unitPrice || item.product?.price || 0) * Number(item.quantity || 0)) + '</strong></div>'

@@ -7,6 +7,7 @@ import E_Market_Management.membership.entity.MembershipTier;
 import E_Market_Management.membership.repository.MembershipRepository;
 import E_Market_Management.order.mapper.OrderMapper;
 import E_Market_Management.order.repository.OrderItemRepository;
+import E_Market_Management.order.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import E_Market_Management.order.dto.OrderResponse;
 import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
+import E_Market_Management.order.entity.Payment;
 import E_Market_Management.order.entity.STATUS;
 import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.product.entity.Product;
@@ -42,6 +44,7 @@ public class OrderService {
 
     private final OrderMapper orderMapper;
     private final OrderItemRepository orderItemRepository;
+    private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
@@ -54,6 +57,7 @@ public class OrderService {
         UserRepository userRepository, 
         ProductRepository productRepository, 
         OrderItemRepository orderItemRepository, 
+        PaymentRepository paymentRepository,
         OrderMapper orderMapper, 
         CartRepository cartRepository,
         CartItemRepository cartItemRepository,
@@ -63,6 +67,7 @@ public class OrderService {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
+        this.paymentRepository = paymentRepository;
         this.orderMapper = orderMapper;
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
@@ -189,6 +194,12 @@ public class OrderService {
         orderItemRepository.saveAll(orderItems);
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
+
+        Payment payment = paymentRepository.save(Payment.builder()
+            .methodName(request.getPaymentMethod())
+            .order(order)
+            .build());
+        order.setPayment(payment);
 
         if(cart != null) {
             cartItemRepository.deleteAllByCart_Id(cart.getId());

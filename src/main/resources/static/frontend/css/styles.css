@@ -3097,6 +3097,11 @@ i[data-lucide] {
     color: var(--muted);
     margin: 8px 0 12px;
 }
+.admin-order-payment {
+    margin: -4px 0 12px;
+    color: var(--muted);
+    font-size: 13px;
+}
 .admin-order-items {
     display: grid;
     gap: 6px;

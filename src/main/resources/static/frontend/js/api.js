@@ -182,19 +182,25 @@
             return request(`/api/orders/${orderId}`);
         },
         async getProfile() {
-            return request("/api/user/profile");
+            return request("/api/users/profile");
         },
         async updateProfile(payload) {
-            return request("/api/user/profile", {
+            return request("/api/users/profile", {
+                method: "PATCH",
+                body: JSON.stringify(payload)
+            });
+        },
+        async changePassword(payload) {
+            return request("/api/auth/change-password", {
                 method: "PATCH",
                 body: JSON.stringify(payload)
             });
         },
         async getUsers(page = 0, size = 20) {
-            return request(`/api/user?page=${page}&size=${size}`);
+            return request(`/api/users?page=${page}&size=${size}`);
         },
         async updateUserRole(userId, role) {
-            return request(`/api/user/profile/${userId}`, {
+            return request(`/api/users/profile/${userId}`, {
                 method: "PATCH",
                 body: JSON.stringify({ role })
             });

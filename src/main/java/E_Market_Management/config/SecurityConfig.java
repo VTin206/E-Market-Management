@@ -53,6 +53,10 @@ public class SecurityConfig {
                 ))
             )
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    HttpMethod.PATCH,
+                    "/api/auth/change-password"
+                ).authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/frontend/**").permitAll()
                 .requestMatchers(
@@ -61,15 +65,15 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/user"
+                    "/api/users"
                 ).hasRole("ADMIN")
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/user/profile"
+                    "/api/users/profile"
                 ).authenticated()
                 .requestMatchers(
                     HttpMethod.PATCH,
-                    "/api/user/profile"
+                    "/api/users/profile"
                 ).authenticated()
                 .requestMatchers(
                     HttpMethod.GET,
@@ -146,7 +150,7 @@ public class SecurityConfig {
                 ).hasRole("ADMIN")
                 .requestMatchers(
                     HttpMethod.PATCH,
-                    "/api/user/profile/{id}"
+                    "/api/users/profile/{id}"
                 ).hasRole("ADMIN")
                 .requestMatchers(
                     "/swagger-ui/**",

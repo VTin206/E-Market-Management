@@ -184,6 +184,12 @@ i[data-lucide] {
     background: #fff;
     border-radius: var(--radius-md);
 }
+.brand-logo-header {
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    filter: brightness(0) invert(1);
+}
 .brand-mark {
     display: grid;
     place-items: center;
@@ -634,6 +640,14 @@ i[data-lucide] {
     position: relative;
     box-shadow: var(--shadow-lg);
 }
+.hero-image-only {
+    background: #fff;
+}
+.hero-banner-image {
+    display: block;
+    width: 100%;
+    height: auto;
+}
 .hero-content {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
@@ -979,6 +993,9 @@ i[data-lucide] {
 .deal-section {
     background: #fff;
     padding: 24px;
+}
+.deal-section.no-products {
+    display: none;
 }
 .deal-banner {
     display: grid;
@@ -2923,6 +2940,54 @@ i[data-lucide] {
 .profile-membership-card span:last-child {
     font-size: 13px;
     color: var(--muted);
+}
+.profile-password-card {
+    padding: 20px;
+}
+.profile-password-card .profile-card-heading {
+    margin-bottom: 8px;
+}
+.profile-password-description {
+    margin-bottom: 16px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+.profile-password-fields {
+    display: grid;
+    gap: 12px;
+}
+.profile-password-fields label {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+.profile-password-fields input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    color: var(--text);
+    outline: none;
+}
+.profile-password-fields input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+.profile-password-card .profile-feedback.is-error {
+    color: #b91c1c;
+}
+.profile-password-card .profile-feedback.is-success {
+    color: #15803d;
+}
+.profile-password-card .profile-form-actions .primary-button {
+    width: 100%;
+    justify-content: center;
 }
 .profile-security-note {
     display: flex;

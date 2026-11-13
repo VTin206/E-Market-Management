@@ -30,8 +30,8 @@
     <header class="site-header" id="home">
         <div class="header-main shell">
             <!-- Brand Logo -->
-            <a class="brand" href="#home" aria-label="E-Market Store">
-                <img class="brand-logo-image" src="assets/emarket-logo.png" alt="E-Market - Mua sắm trực tuyến dễ dàng">
+            <a class="brand" id="homeBrandLink" data-show-home href="#home" aria-label="E-Hub Store">
+                <img class="brand-logo-image brand-logo-header" src="assets/e-hub-logo.png" alt="E-Hub - Modern Tech. Seamless Connections.">
             </a>
 
             <!-- Catalog Toggle Button -->
@@ -117,13 +117,13 @@
         <!-- Sub Navigation Bar -->
         <nav class="main-nav">
             <div class="shell nav-inner">
-                <a class="nav-item active" href="#home"><i data-lucide="home"></i> Trang chủ</a>
+                <a class="nav-item active" id="homeNavLink" data-show-home href="#home"><i data-lucide="home"></i> Trang chủ</a>
                 <div class="nav-products">
-                    <a class="nav-item" href="#products">Sản phẩm <i data-lucide="chevron-down"></i></a>
+                    <a class="nav-item" id="catalogNavLink" data-open-catalog href="#products">Sản phẩm <i data-lucide="chevron-down"></i></a>
                     <div class="mega-menu" id="megaMenu"></div>
                 </div>
-                <a class="nav-item nav-hot" href="#deals"><i data-lucide="flame"></i> Khuyến mãi HOT</a>
-                <a class="nav-item" href="#categories"><i data-lucide="tags"></i> Danh mục nổi bật</a>
+                <a class="nav-item nav-hot" data-open-catalog data-catalog-target="deals" href="#deals"><i data-lucide="flame"></i> Khuyến mãi HOT</a>
+                <a class="nav-item" data-show-home data-home-target="categories" href="#categories"><i data-lucide="tags"></i> Danh mục nổi bật</a>
                 <div class="nav-quick-categories" id="navQuickCategories"></div>
             </div>
         </nav>
@@ -143,62 +143,20 @@
 
     <main>
         <!-- Hero Section -->
-        <section class="hero shell listing-view">
-            <div class="hero-content">
-                <div class="hero-copy">
-                    <span class="eyebrow"><i data-lucide="shield-check"></i> <span data-hero-badge>100% SẢN PHẨM CHÍNH HÃNG</span></span>
-                    <h1><span class="hero-title-main" data-hero-title-main>Công Nghệ Đỉnh Cao</span><br><span data-hero-title-accent>Nâng Tầm Trải Nghiệm</span></h1>
-                    <p data-hero-description>Khám phá thế giới điện thoại và thiết bị công nghệ chính hãng mới nhất. Đặt mua nhanh chóng, giá tốt mỗi ngày, bảo hành 12 tháng và hỗ trợ trả góp 0% lãi suất.</p>
-                    <div class="hero-actions">
-                        <a class="primary-button hero-cta" href="#products" data-hero-cta>
-                            <i data-lucide="shopping-cart"></i> <span data-hero-cta-label>Khám phá sản phẩm</span>
-                        </a>
-                        <button class="ghost-button" id="heroLoginButton" type="button">
-                            <i data-lucide="user"></i> Đăng nhập / Đăng ký
-                        </button>
-                    </div>
-                    <div class="hero-stats">
-                        <div class="hero-stat">
-                            <strong>100%</strong>
-                            <span>Chính hãng VN/A</span>
-                        </div>
-                        <div class="hero-stat-sep"></div>
-                        <div class="hero-stat">
-                            <strong>2 Giờ</strong>
-                            <span>Giao siêu tốc</span>
-                        </div>
-                        <div class="hero-stat-sep"></div>
-                        <div class="hero-stat">
-                            <strong>30 Ngày</strong>
-                            <span>Đổi trả 1-1</span>
-                        </div>
-                    </div>
-                    <div class="hero-controls" role="group" aria-label="Điều khiển banner khuyến mãi">
-                        <button class="hero-arrow" type="button" data-hero-previous aria-label="Banner trước"><span aria-hidden="true">←</span></button>
-                        <div class="hero-indicators">
-                            <button class="hero-indicator is-active" type="button" data-hero-slide="0" aria-label="Banner sản phẩm nổi bật" aria-pressed="true"></button>
-                            <button class="hero-indicator" type="button" data-hero-slide="1" aria-label="Banner khuyến mãi" aria-pressed="false"></button>
-                        </div>
-                        <button class="hero-arrow" type="button" data-hero-next aria-label="Banner tiếp theo"><span aria-hidden="true">→</span></button>
-                        <span class="sr-only" data-hero-announcement aria-live="polite">Banner 1 trên 2</span>
-                    </div>
-                </div>
-                <div class="hero-banner-visual">
-                    <div class="hero-device-card">
-                        <div class="hero-card-badge" data-hero-card-badge>HOT 2026</div>
-                        <img src="assets/product-iphone.svg" alt="iPhone 15 Pro Max" class="hero-product-img" data-hero-product-image>
-                        <div class="hero-device-info">
-                            <strong data-hero-product-name>iPhone 15 Pro Max</strong>
-                            <span data-hero-product-meta>Titan Tự Nhiên · Chip A17 Pro</span>
-                            <div class="hero-device-price" data-hero-product-price>Từ 29.990.000đ</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <section class="hero hero-image-only shell home-view" aria-label="Banner khuyến mãi E-Hub">
+            <img
+                class="hero-banner-image"
+                src="assets/e-hub-checkin-hero-2026.png"
+                alt="E-Hub: Check-in nhận ưu đãi giảm 3%, tối đa 200.000 đồng mỗi hóa đơn, từ ngày 1 tháng 11 đến ngày 1 tháng 12 năm 2026."
+                width="1676"
+                height="640"
+                fetchpriority="high"
+                decoding="async"
+            >
         </section>
 
         <!-- Value Propositions (Trust Bar) -->
-        <section class="trust-bar shell listing-view">
+        <section class="trust-bar shell home-view">
             <div class="trust-item">
                 <div class="trust-icon"><i data-lucide="truck"></i></div>
                 <div class="trust-copy">
@@ -230,17 +188,17 @@
         </section>
 
         <!-- Featured Categories -->
-        <section class="featured-categories shell panel listing-view" id="categories"></section>
+        <section class="featured-categories shell panel home-view" id="categories"></section>
 
         <!-- Flash Sale / Deals -->
-        <section class="deal-section shell panel listing-view" id="deals"></section>
+        <section class="deal-section shell panel catalog-view hidden" id="deals"></section>
 
         <!-- Main Products Section with Rich Filter & Sorting -->
-        <section class="products-section shell panel listing-view" id="products">
+        <section class="products-section shell panel catalog-view hidden" id="products">
             <div class="products-header">
                 <div class="section-title">
                     <span></span>
-                    <h2>Tất Cả Sản Phẩm</h2>
+                    <h2>Danh Mục Sản Phẩm</h2>
                     <small id="productTotalCount" class="products-count-badge">Đang tải...</small>
                 </div>
 
@@ -323,7 +281,7 @@
         </section>
 
         <!-- Category Sections -->
-        <section class="category-sections listing-view" id="categorySections"></section>
+        <section class="category-sections catalog-view hidden" id="categorySections"></section>
 
         <!-- Product Detail Section -->
         <section class="detail-section shell panel hidden" id="productDetail"></section>
@@ -406,6 +364,34 @@
                         <strong id="profileMembership">Thành viên</strong>
                         <span id="profileMembershipDetails">Quyền lợi dành riêng cho bạn</span>
                     </section>
+                    <section class="profile-card profile-password-card" aria-labelledby="profilePasswordTitle">
+                        <div class="profile-card-heading">
+                            <div>
+                                <span class="profile-section-kicker">BẢO MẬT TÀI KHOẢN</span>
+                                <h2 id="profilePasswordTitle">Đổi mật khẩu</h2>
+                            </div>
+                        </div>
+                        <p class="profile-password-description">Dùng mật khẩu hiện tại để xác nhận thay đổi.</p>
+                        <form class="profile-form" id="changePasswordForm">
+                            <div class="profile-password-fields">
+                                <label for="currentPasswordInput">Mật khẩu hiện tại
+                                    <input id="currentPasswordInput" name="currentPassword" type="password" autocomplete="current-password" required>
+                                </label>
+                                <label for="newPasswordInput">Mật khẩu mới
+                                    <input id="newPasswordInput" name="newPassword" type="password" autocomplete="new-password" minlength="6" required>
+                                </label>
+                                <label for="confirmPasswordInput">Nhập lại mật khẩu mới
+                                    <input id="confirmPasswordInput" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required>
+                                </label>
+                            </div>
+                            <p class="profile-feedback" id="changePasswordFeedback" aria-live="polite"></p>
+                            <div class="profile-form-actions">
+                                <button class="primary-button" id="changePasswordSubmitButton" type="submit">
+                                    <i data-lucide="key-round"></i> Đổi mật khẩu
+                                </button>
+                            </div>
+                        </form>
+                    </section>
                     <p class="profile-security-note">
                         <i data-lucide="shield-check"></i>
                         <span>Thông tin hồ sơ và đơn hàng của bạn được bảo mật tuyệt đối theo tiêu chuẩn an toàn.</span>
@@ -464,7 +450,7 @@
             <div class="footer-top">
                 <div class="footer-col brand-col">
                     <div class="footer-brand">
-                        <img class="brand-logo-image brand-logo-footer" src="assets/emarket-logo.png" alt="E-Market - Mua sắm trực tuyến dễ dàng">
+                        <img class="brand-logo-image brand-logo-footer" src="assets/e-hub-logo.png" alt="E-Hub - Modern Tech. Seamless Connections.">
                     </div>
                     <p>Hệ thống bán lẻ điện thoại, máy tính bảng và thiết bị công nghệ chính hãng hàng đầu. Cam kết chất lượng, tận tâm phục vụ.</p>
                     <div class="footer-hotline">
@@ -513,7 +499,7 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Thanh điều hướng di động">
-        <a href="#home" class="mobile-nav-item active" id="mobNavHome">
+        <a href="#home" class="mobile-nav-item active" id="mobNavHome" data-show-home>
             <i data-lucide="home"></i>
             <span>Trang chủ</span>
         </a>

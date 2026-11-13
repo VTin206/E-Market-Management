@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import E_Market_Management.auth.dto.AuthResponse;
+import E_Market_Management.auth.dto.ChangePasswordRequest;
 import E_Market_Management.auth.dto.LoginRequest;
 import E_Market_Management.auth.dto.RegisterRequest;
 import E_Market_Management.auth.security.CustomUserDetails;
@@ -15,9 +16,11 @@ import E_Market_Management.auth.security.JwtService;
 import E_Market_Management.membership.entity.MembershipTier;
 import E_Market_Management.membership.repository.MembershipRepository;
 import E_Market_Management.shared.exception.ConflictException;
+import E_Market_Management.shared.exception.ResourceNotFoundException;
 import E_Market_Management.user.entity.ROLE;
 import E_Market_Management.user.entity.User;
 import E_Market_Management.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class AuthService {
@@ -85,5 +88,20 @@ public class AuthService {
             .orElse("CUSTOMER");
 
         return new AuthResponse(token, "Bearer", role);
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request, Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản hiện tại!"));
+
+        boolean isMatch = passwordEncoder.matches(request.getCurrentPassword(), user.getPassword());
+
+        if(!isMatch) {
+            throw new ConflictException("Mật khẩu hiện tại không khớp!");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

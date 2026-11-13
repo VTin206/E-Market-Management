@@ -20,6 +20,7 @@
         view: "listing",
         profile: null,
         profileSaving: false,
+        changePasswordSaving: false,
         adminTab: "orders",
         adminEditing: null,
         admin: {
@@ -100,6 +101,12 @@
         profileFeedback: $("#profileFeedback"),
         profileSaveButton: $("#profileSaveButton"),
         profileResetButton: $("#profileResetButton"),
+        changePasswordForm: $("#changePasswordForm"),
+        currentPasswordInput: $("#currentPasswordInput"),
+        newPasswordInput: $("#newPasswordInput"),
+        confirmPasswordInput: $("#confirmPasswordInput"),
+        changePasswordFeedback: $("#changePasswordFeedback"),
+        changePasswordSubmitButton: $("#changePasswordSubmitButton"),
         profileBackButton: $("#profileBackButton"),
         profileOrdersPreview: $("#profileOrdersPreview"),
         adminButton: $("#adminButton"),
@@ -130,6 +137,8 @@
         catalogToggle: $("#catalogToggle"),
         closeCatalog: $("#closeCatalog"),
         catalogList: $("#catalogList"),
+        homeNavLink: $("#homeNavLink"),
+        catalogNavLink: $("#catalogNavLink"),
         megaMenu: $("#megaMenu"),
         navQuickCategories: $("#navQuickCategories"),
         toast: $("#toast"),
@@ -210,7 +219,9 @@
     }
 
     function showHeroSlide(index) {
-        if (!nodes.hero || !heroSlides.length) return;
+        if (!nodes.hero || !nodes.heroBadge || !nodes.heroTitleMain || !nodes.heroTitleAccent || !nodes.heroDescription
+            || !nodes.heroCta || !nodes.heroCtaLabel || !nodes.heroCardBadge || !nodes.heroProductImage
+            || !nodes.heroProductName || !nodes.heroProductMeta || !nodes.heroProductPrice || !nodes.heroAnnouncement || !heroSlides.length) return;
         activeHeroSlide = (index + heroSlides.length) % heroSlides.length;
         const slide = heroSlides[activeHeroSlide];
 
@@ -241,7 +252,7 @@
     }
 
     function initHeroCarousel() {
-        if (!nodes.hero || heroSlides.length < 2) return;
+        if (!nodes.hero || !nodes.heroPrevious || !nodes.heroNext || heroSlides.length < 2) return;
         let pointerPaused = false;
         let focusPaused = false;
         const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -351,7 +362,7 @@
             <div class="section-title">
                 <span></span>
                 <h2>Danh Mục Nổi Bật</h2>
-                <a href="#products" class="view-all-link">Xem tất cả sản phẩm <i data-lucide="arrow-right"></i></a>
+                <a href="#products" class="view-all-link" data-open-catalog>Xem tất cả sản phẩm <i data-lucide="arrow-right"></i></a>
             </div>
             ${categories.length ? `
                 <div class="category-grid">
@@ -381,7 +392,7 @@
                 ? categories.map((category) => `
                     <div class="mega-menu-group">
                         <strong>${escapeHtml(category.name)}</strong>
-                        <button type="button" data-menu-search="${escapeHtml(category.name)}">
+                        <button type="button" data-category-filter="${escapeHtml(category.name)}">
                             <i data-lucide="arrow-right"></i> Xem tất cả
                         </button>
                     </div>
@@ -394,7 +405,7 @@
                 ? categories.map((category) => {
                     const count = state.products.filter((product) => product.category?.id === category.id).length;
                     return `
-                        <button class="catalog-item" type="button" data-menu-search="${escapeHtml(category.name)}">
+                        <button class="catalog-item" type="button" data-category-filter="${escapeHtml(category.name)}">
                             <div class="catalog-item-left">
                                 <i data-lucide="tag"></i>
                                 <span>${escapeHtml(category.name)}</span>
@@ -408,7 +419,7 @@
 
         if (nodes.navQuickCategories) {
             nodes.navQuickCategories.innerHTML = categories.slice(0, 5).map((category) => `
-                <button type="button" class="quick-cat-pill" data-menu-search="${escapeHtml(category.name)}">
+                <button type="button" class="quick-cat-pill" data-category-filter="${escapeHtml(category.name)}">
                     ${escapeHtml(category.name)}
                 </button>
             `).join("");
@@ -590,7 +601,7 @@
     function renderDeal() {
         if (!nodes.deals) return;
         const dealProducts = state.products.filter((product) => product.stock > 0).slice(0, 4);
-        nodes.deals.classList.toggle("hidden", !dealProducts.length);
+        nodes.deals.classList.toggle("no-products", !dealProducts.length);
         if (!dealProducts.length) {
             nodes.deals.innerHTML = "";
             return;
@@ -633,7 +644,7 @@
                     <div class="section-title">
                         <span></span>
                         <h2>${safeName}</h2>
-                        <a href="#products" class="view-all-link" data-menu-search="${safeName}">
+                        <a href="#products" class="view-all-link" data-category-filter="${safeName}">
                             Xem tất cả (${products.length}) <i data-lucide="arrow-right"></i>
                         </a>
                     </div>
@@ -648,7 +659,9 @@
 
     function setView(view) {
         state.view = view;
-        document.querySelectorAll(".listing-view").forEach((section) => section.classList.toggle("hidden", view !== "listing"));
+        const catalogActive = view === "catalog" || view === "detail";
+        document.querySelectorAll(".home-view").forEach((section) => section.classList.toggle("hidden", view !== "listing"));
+        document.querySelectorAll(".catalog-view").forEach((section) => section.classList.toggle("hidden", view !== "catalog"));
         if (nodes.productDetail) nodes.productDetail.classList.toggle("hidden", view !== "detail");
         if (nodes.profileView) nodes.profileView.classList.toggle("hidden", view !== "profile");
         if (nodes.adminView) nodes.adminView.classList.toggle("hidden", view !== "admin");
@@ -657,7 +670,32 @@
         document.body.classList.toggle("admin-mode", view === "admin");
 
         // Mobile active tab sync
+        if (nodes.homeNavLink) nodes.homeNavLink.classList.toggle("active", view === "listing");
+        if (nodes.catalogNavLink) nodes.catalogNavLink.classList.toggle("active", catalogActive);
         if (nodes.mobNavHome) nodes.mobNavHome.classList.toggle("active", view === "listing");
+        if (nodes.mobNavCatalog) nodes.mobNavCatalog.classList.toggle("active", catalogActive);
+    }
+
+    function showHome(targetId = null) {
+        if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
+        setView("listing");
+        if (targetId) {
+            document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }
+
+    function showCatalog(targetId = "products") {
+        if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
+        setView("catalog");
+        requestAnimationFrame(() => {
+            const requestedTarget = document.getElementById(targetId);
+            const target = requestedTarget && !requestedTarget.classList.contains("no-products")
+                ? requestedTarget
+                : nodes.products;
+            target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     }
 
     function renderDetail(product) {
@@ -676,7 +714,7 @@
             <div class="detail-breadcrumbs">
                 <a href="#home" id="breadcrumbHome"><i data-lucide="home"></i> Trang chủ</a>
                 <span class="crumb-sep">/</span>
-                <span class="crumb-category" data-menu-search="${categoryName}">${categoryName}</span>
+                <span class="crumb-category" data-category-filter="${categoryName}">${categoryName}</span>
                 <span class="crumb-sep">/</span>
                 <span class="crumb-current">${escapeHtml(product.name)}</span>
             </div>
@@ -1348,6 +1386,52 @@
             state.profileSaving = false;
             nodes.profileSaveButton.disabled = false;
             nodes.profileSaveButton.innerHTML = `<i data-lucide="save"></i> Lưu thay đổi`;
+            refreshIcons();
+        }
+    }
+
+    async function handleChangePasswordSubmit(event) {
+        event.preventDefault();
+        if (state.changePasswordSaving) return;
+
+        const formValues = new FormData(nodes.changePasswordForm);
+        const currentPassword = String(formValues.get("currentPassword") || "");
+        const newPassword = String(formValues.get("newPassword") || "");
+        const confirmPassword = String(formValues.get("confirmPassword") || "");
+        const feedback = nodes.changePasswordFeedback;
+
+        feedback.classList.remove("is-error", "is-success");
+        if (newPassword !== confirmPassword) {
+            feedback.textContent = "Mật khẩu mới nhập lại chưa khớp.";
+            feedback.classList.add("is-error");
+            nodes.confirmPasswordInput.focus();
+            return;
+        }
+        if (currentPassword === newPassword) {
+            feedback.textContent = "Mật khẩu mới phải khác mật khẩu hiện tại.";
+            feedback.classList.add("is-error");
+            nodes.newPasswordInput.focus();
+            return;
+        }
+
+        state.changePasswordSaving = true;
+        nodes.changePasswordSubmitButton.disabled = true;
+        nodes.changePasswordSubmitButton.innerHTML = "<i data-lucide=\"loader-circle\"></i> Đang cập nhật…";
+        feedback.textContent = "Đang xác nhận mật khẩu…";
+
+        try {
+            await window.emarketApi.changePassword({ currentPassword, newPassword });
+            nodes.changePasswordForm.reset();
+            feedback.textContent = "Đổi mật khẩu thành công.";
+            feedback.classList.add("is-success");
+            showToast("Đổi mật khẩu thành công.", "success");
+        } catch (error) {
+            feedback.textContent = `Không thể đổi mật khẩu: ${error.message}`;
+            feedback.classList.add("is-error");
+        } finally {
+            state.changePasswordSaving = false;
+            nodes.changePasswordSubmitButton.disabled = false;
+            nodes.changePasswordSubmitButton.innerHTML = "<i data-lucide=\"key-round\"></i> Đổi mật khẩu";
             refreshIcons();
         }
     }
@@ -2029,7 +2113,7 @@
         if (nodes.searchClearButton) {
             nodes.searchClearButton.classList.toggle("hidden", !state.query);
         }
-        setView("listing");
+        setView("catalog");
         renderProducts();
         const target = $("#products");
         if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2061,6 +2145,20 @@
     function bindEvents() {
         // Document delegation for all clickable elements
         document.addEventListener("click", (event) => {
+            const homeNavigation = event.target.closest("[data-show-home]");
+            if (homeNavigation) {
+                event.preventDefault();
+                showHome(homeNavigation.dataset.homeTarget || null);
+                return;
+            }
+
+            const catalogNavigation = event.target.closest("[data-open-catalog]");
+            if (catalogNavigation) {
+                event.preventDefault();
+                showCatalog(catalogNavigation.dataset.catalogTarget || "products");
+                return;
+            }
+
             const cancelOrderButton = event.target.closest("[data-cancel-order]");
             if (cancelOrderButton) {
                 void cancelCustomerOrder(cancelOrderButton);
@@ -2141,9 +2239,23 @@
 
             if (categoryFilter) {
                 state.categoryFilter = categoryFilter.dataset.categoryFilter;
-                if (nodes.filterCategory) nodes.filterCategory.value = state.categoryFilter;
+                state.query = "";
+                state.filter = "all";
+                state.brandFilter = "";
+                state.priceFilter = "all";
+                state.sortFilter = "default";
                 state.productsPage = 0;
-                setView("listing");
+                if (nodes.searchInput) nodes.searchInput.value = "";
+                if (nodes.searchClearButton) nodes.searchClearButton.classList.add("hidden");
+                if (nodes.filterCategory) nodes.filterCategory.value = state.categoryFilter;
+                if (nodes.filterBrand) nodes.filterBrand.value = "";
+                if (nodes.filterPrice) nodes.filterPrice.value = "all";
+                if (nodes.filterSort) nodes.filterSort.value = "default";
+                document.querySelectorAll(".tab").forEach((tab) => {
+                    tab.classList.toggle("active", tab.dataset.filter === "all");
+                });
+                if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
+                setView("catalog");
                 renderProducts();
                 const target = $("#products");
                 if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2220,11 +2332,13 @@
                 const editReview = event.target.closest("[data-edit-review]");
                 const deleteReview = event.target.closest("[data-delete-review]");
 
-                if (event.target.closest("#backToProducts") || event.target.closest("#breadcrumbHome")) {
-                    setView("listing");
+                if (event.target.closest("#backToProducts")) {
+                    setView("catalog");
                     const target = $("#products");
                     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
                 }
+
+                if (event.target.closest("#breadcrumbHome")) showHome();
 
                 if (qty && state.selectedProduct) {
                     state.quantity = Math.min(state.selectedProduct.stock, Math.max(1, state.quantity + Number(qty.dataset.qty)));
@@ -2287,6 +2401,7 @@
 
         // Profile Events
         if (nodes.profileForm) nodes.profileForm.addEventListener("submit", handleProfileSubmit);
+        if (nodes.changePasswordForm) nodes.changePasswordForm.addEventListener("submit", handleChangePasswordSubmit);
         if (nodes.profileResetButton) nodes.profileResetButton.addEventListener("click", resetProfileForm);
         if (nodes.profileRetryButton) nodes.profileRetryButton.addEventListener("click", () => void loadProfile());
         if (nodes.profileBackButton) {
@@ -2361,7 +2476,7 @@
         }
         if (nodes.mobNavSearch) {
             nodes.mobNavSearch.addEventListener("click", () => {
-                setView("listing");
+                setView("catalog");
                 if (nodes.searchInput) {
                     nodes.searchInput.focus();
                     nodes.searchInput.scrollIntoView({ behavior: "smooth", block: "center" });

@@ -35,6 +35,8 @@ import E_Market_Management.order.dto.UpdateOrderStatusRequest;
 import E_Market_Management.order.entity.Order;
 import E_Market_Management.order.entity.OrderItem;
 import E_Market_Management.order.entity.Payment;
+import E_Market_Management.order.entity.METHOD;
+import E_Market_Management.order.entity.PAYMENT_STATUS;
 import E_Market_Management.order.entity.STATUS;
 import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.product.entity.Product;
@@ -205,6 +207,9 @@ public class OrderService {
 
         Payment payment = paymentRepository.save(Payment.builder()
             .methodName(request.getPaymentMethod())
+            .status(request.getPaymentMethod() == METHOD.BANK_TRANSFER
+                ? PAYMENT_STATUS.PENDING
+                : PAYMENT_STATUS.UNPAID)
             .order(order)
             .build());
         order.setPayment(payment);

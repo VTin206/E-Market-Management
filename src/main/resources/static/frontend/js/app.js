@@ -1535,6 +1535,17 @@
         return labels[String(method || "").toUpperCase()] || "Chưa có thông tin";
     }
 
+    function paymentStatusLabel(status) {
+        const labels = {
+            UNPAID: "Chưa thanh toán",
+            PENDING: "Đang chờ xác nhận",
+            PAID: "Đã thanh toán",
+            FAILED: "Thanh toán thất bại",
+            REFUNDED: "Đã hoàn tiền"
+        };
+        return labels[String(status || "").toUpperCase()] || "Chưa xác định";
+    }
+
     function renderTrackedOrder(order, newlyPlaced = false) {
         const statusKey = String(order.status || "pending").toLowerCase().replace(/[^a-z0-9_-]/g, "");
         const successNotice = newlyPlaced
@@ -1557,7 +1568,7 @@
                     <code>${escapeHtml(order.trackingCode || "Chưa có mã vận đơn")}</code>
                 </div>
                 <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
-                <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))}</small>
+                <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))} · ${escapeHtml(paymentStatusLabel(order.paymentStatus))}</small>
                 <div class="order-card-items">
                     ${items.length ? items.map((item) => `
                         <div class="order-sub-item">
@@ -1642,7 +1653,7 @@
                             </span>
                         </div>
                         <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
-                        <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))}</small>
+                        <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))} · ${escapeHtml(paymentStatusLabel(order.paymentStatus))}</small>
                         ${order.trackingCode ? `
                             <div class="order-tracking-code order-history-tracking">
                                 <span>Mã vận đơn</span>
@@ -1753,7 +1764,7 @@
                     + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span></div>'
                     + '<div class="admin-order-meta"><span>📞 ' + escapeHtml(order.phone || "Chưa có SĐT") + '</span><span>🕒 '
                     + escapeHtml(orderDate(order.createdAt)) + '</span><span class="admin-order-address">📍 ' + escapeHtml(order.address || "Chưa có địa chỉ") + '</span></div>'
-                    + '<div class="admin-order-payment">Thanh toán: ' + escapeHtml(paymentMethodLabel(order.paymentMethod)) + '</div>'
+                    + '<div class="admin-order-payment">Thanh toán: ' + escapeHtml(paymentMethodLabel(order.paymentMethod)) + ' · ' + escapeHtml(paymentStatusLabel(order.paymentStatus)) + '</div>'
                     + '<div class="admin-order-items">' + ((order.items || []).map((item) =>
                         '<div><span>' + escapeHtml(item.product?.name || "Sản phẩm") + ' × ' + (Number(item.quantity) || 0)
                         + '</span><strong>' + formatMoney(Number(item.unitPrice || item.product?.price || 0) * Number(item.quantity || 0)) + '</strong></div>'

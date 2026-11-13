@@ -34,6 +34,11 @@ public class Payment {
     @Column(nullable = false, length = 30)
     private METHOD methodName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private PAYMENT_STATUS status = PAYMENT_STATUS.UNPAID;
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     private Order order;

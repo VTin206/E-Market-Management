@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import E_Market_Management.order.entity.METHOD;
+import E_Market_Management.order.entity.PAYMENT_STATUS;
 import lombok.*;
 
 @Data
@@ -22,6 +23,7 @@ public class OrderResponse {
     private String status;
     private LocalDateTime createdAt;
     private METHOD paymentMethod;
+    private PAYMENT_STATUS paymentStatus;
     private UUID trackingCode;
 
     private List<OrderItemResponse> items;

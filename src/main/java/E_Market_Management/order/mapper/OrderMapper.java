@@ -41,6 +41,7 @@ public class OrderMapper {
             .status(order.getStatus().name())
             .createdAt(order.getCreatedAt())
             .paymentMethod(order.getPayment() != null ? order.getPayment().getMethodName() : null)
+            .paymentStatus(order.getPayment() != null ? order.getPayment().getStatus() : null)
             .items(itemResponses)
             .trackingCode(order.getTrackingCode())
             .build();

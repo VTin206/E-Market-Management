@@ -295,6 +295,11 @@
                 body: JSON.stringify({ status })
             });
         },
+        async confirmOrderPayment(orderId) {
+            return request(`/api/orders/${orderId}/payment/confirm`, {
+                method: "POST"
+            });
+        },
         async cancelOrder(orderId) {
             return request(`/api/orders/${orderId}/cancel`, {
                 method: "POST"

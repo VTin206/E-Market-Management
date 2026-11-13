@@ -104,6 +104,10 @@ public class SecurityConfig {
                     "/api/orders/{id}"
                 ).hasRole("ADMIN")
                 .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/orders/{id}/payment/confirm"
+                ).hasRole("ADMIN")
+                .requestMatchers(
                     HttpMethod.GET,
                     "/api/brand/**"
                 ).permitAll()

@@ -102,6 +102,12 @@ public class OrderController {
         );
     }
 
+    @PostMapping("/{id}/payment/confirm")
+    @Operation(summary = "Xác nhận đã nhận tiền của đơn hàng (quản trị viên)")
+    public ResponseEntity<OrderResponse> confirmPayment(@PathVariable("id") Long orderId) {
+        return ResponseEntity.ok(orderService.confirmPayment(orderId));
+    }
+
     @PostMapping("/{id}/cancel")
     @Operation(
         summary = "Hủy đơn hàng",

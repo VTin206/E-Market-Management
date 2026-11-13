@@ -1753,6 +1753,11 @@
             + (orders.length ? '<div class="admin-order-list">' + orders.map((order) => {
                 const allowed = order.status === "PENDING" ? ["PROCESSING", "CANCELLED"]
                     : order.status === "PROCESSING" ? ["COMPLETED", "CANCELLED"] : [];
+                const canConfirmPayment = ["UNPAID", "PENDING"].includes(order.paymentStatus)
+                    && order.status !== "CANCELLED";
+                const confirmPaymentButton = canConfirmPayment
+                    ? '<button class="admin-inline-button" type="button" data-order-payment-confirm="' + order.id + '">Xác nhận đã nhận tiền</button>'
+                    : "";
                 const statusControl = allowed.length
                     ? '<div class="admin-order-status"><label for="orderStatus' + order.id + '">Trạng thái:</label>'
                         + '<select id="orderStatus' + order.id + '" data-order-status="' + order.id + '">'
@@ -1770,7 +1775,7 @@
                         + '</span><strong>' + formatMoney(Number(item.unitPrice || item.product?.price || 0) * Number(item.quantity || 0)) + '</strong></div>'
                     ).join("") || '<span>Đơn chưa có sản phẩm.</span>') + '</div>'
                     + '<div class="admin-order-bottom"><div><span>Tổng đơn hàng:</span><strong>' + formatMoney(order.totalAmount) + '</strong></div>'
-                    + statusControl + '</div></article>';
+                    + statusControl + confirmPaymentButton + '</div></article>';
             }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới từ khách sẽ xuất hiện ở đây.</p></div>')
             + pagination;
     }
@@ -2687,6 +2692,22 @@
                     } catch (error) {
                         showToast("Không thể cập nhật đơn hàng: " + error.message, "error");
                         updateOrderButton.disabled = false;
+                    }
+                    return;
+                }
+                const confirmPaymentButton = event.target.closest("[data-order-payment-confirm]");
+                if (confirmPaymentButton) {
+                    const orderId = Number(confirmPaymentButton.dataset.orderPaymentConfirm);
+                    confirmPaymentButton.disabled = true;
+                    confirmPaymentButton.textContent = "Đang xác nhận…";
+                    try {
+                        await window.emarketApi.confirmOrderPayment(orderId);
+                        showToast("Đã xác nhận thanh toán cho đơn hàng.", "success");
+                        await loadAdminData();
+                    } catch (error) {
+                        showToast("Không thể xác nhận thanh toán: " + error.message, "error");
+                        confirmPaymentButton.disabled = false;
+                        confirmPaymentButton.textContent = "Xác nhận đã nhận tiền";
                     }
                 }
             });

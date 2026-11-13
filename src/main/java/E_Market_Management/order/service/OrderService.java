@@ -292,6 +292,29 @@ public class OrderService {
         return orderMapper.toResponse(order, order.getOrderItems());
     }
 
+    @Transactional
+    public OrderResponse confirmPayment(Long orderId) {
+        Order order = orderRepository.findByIdForUpdate(orderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
+
+        Payment payment = order.getPayment();
+        if (payment == null) {
+            throw new ResourceNotFoundException("Đơn hàng chưa có thông tin thanh toán");
+        }
+        if (order.getStatus() == STATUS.CANCELLED) {
+            throw new ConflictException("Không thể xác nhận thanh toán cho đơn đã hủy");
+        }
+        if (payment.getStatus() != PAYMENT_STATUS.UNPAID
+            && payment.getStatus() != PAYMENT_STATUS.PENDING) {
+            throw new ConflictException("Thanh toán đã được xử lý hoặc không còn chờ xác nhận");
+        }
+
+        payment.setStatus(PAYMENT_STATUS.PAID);
+        paymentRepository.save(payment);
+        List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
+        return orderMapper.toResponse(order, items);
+    }
+
     @Transactional 
     public OrderResponse getCurrentOrder(Long orderId, CustomUserDetails userDetails) {
         Order order = orderRepository.findById(orderId)

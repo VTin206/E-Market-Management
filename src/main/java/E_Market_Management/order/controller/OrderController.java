@@ -99,6 +99,10 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/cancel")
+    @Operation(
+        summary = "Hủy đơn hàng",
+        description = "Cho phép chủ đơn hủy đơn hàng đang ở trạng thái PENDING. Hệ thống chuyển trạng thái sang CANCELLED và hoàn số lượng sản phẩm vào kho. Yêu cầu xác thực."
+    )
     public ResponseEntity<OrderResponse> cancelOrder(
         @PathVariable("id") Long orderId,
         @AuthenticationPrincipal CustomUserDetails userDetails
@@ -110,6 +114,10 @@ public class OrderController {
     }
 
     @PostMapping("/track")
+    @Operation(
+        summary = "Tra cứu đơn hàng bằng mã vận đơn",
+        description = "Tìm đơn hàng theo trackingCode dạng UUID và trả về thông tin đơn hàng cùng các sản phẩm. Endpoint công khai, không yêu cầu xác thực."
+    )
     public ResponseEntity<OrderResponse> trackOrder(@RequestParam UUID trackingCode) {
        return ResponseEntity.ok(
             orderService.trackOrder(trackingCode)

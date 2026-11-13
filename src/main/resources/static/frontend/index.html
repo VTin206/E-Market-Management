@@ -725,13 +725,24 @@
             <div class="panel-head-title">
                 <i data-lucide="package"></i>
                 <div>
-                    <span>Quản lý đơn hàng</span>
-                    <strong id="ordersTitle">Đơn hàng của tôi</strong>
+                    <span>Hỗ trợ đơn hàng</span>
+                    <strong id="ordersTitle">Tra cứu đơn hàng</strong>
                 </div>
             </div>
             <button id="closeOrders" type="button" aria-label="Đóng"><i data-lucide="x"></i></button>
         </div>
-        <div class="order-list" id="orderList" aria-live="polite"></div>
+        <div class="order-lookup-panel" id="orderLookupPanel">
+            <p class="order-lookup-intro">Nhập mã vận đơn để xem trạng thái và thông tin đơn hàng. Mã được cấp sau khi đặt hàng thành công.</p>
+            <form class="order-lookup-form" id="orderTrackingForm">
+                <label for="orderTrackingCode">Mã vận đơn</label>
+                <div class="order-lookup-fields">
+                    <input id="orderTrackingCode" name="trackingCode" type="text" required maxlength="36" autocomplete="off" autocapitalize="off" spellcheck="false" pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}" title="Nhập mã vận đơn gồm 36 ký tự dạng UUID.">
+                    <button class="primary-button" id="trackOrderButton" type="submit"><i data-lucide="search"></i> Tra cứu</button>
+                </div>
+            </form>
+            <div class="order-lookup-result" id="orderLookupResult" aria-live="polite"></div>
+        </div>
+        <div class="order-list hidden" id="orderList" aria-live="polite"></div>
     </section>
 
     <!-- Lucide Icons & App Scripts -->

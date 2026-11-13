@@ -114,6 +114,12 @@
         ordersModal: $("#ordersModal"),
         ordersBackdrop: $("#ordersBackdrop"),
         closeOrders: $("#closeOrders"),
+        ordersTitle: $("#ordersTitle"),
+        orderLookupPanel: $("#orderLookupPanel"),
+        orderTrackingForm: $("#orderTrackingForm"),
+        orderTrackingCode: $("#orderTrackingCode"),
+        trackOrderButton: $("#trackOrderButton"),
+        orderLookupResult: $("#orderLookupResult"),
         orderList: $("#orderList"),
         authModal: $("#authModal"),
         authBackdrop: $("#authBackdrop"),
@@ -1369,7 +1375,7 @@
             nodes.checkoutForm.reset();
             closeCheckout();
             closeCart();
-            showToast(`Đặt hàng thành công! Mã đơn: #${order.id}.`, "success");
+            showOrderLookup(order, true);
         } catch (error) {
             showToast(`Chưa thể tạo đơn hàng: ${error.message}`, "error");
         } finally {
@@ -1384,6 +1390,29 @@
         nodes.ordersModal.classList.add("hidden");
         nodes.ordersBackdrop.classList.add("hidden");
         nodes.ordersModal.setAttribute("aria-hidden", "true");
+    }
+
+    function openOrdersModal() {
+        nodes.ordersModal.classList.remove("hidden");
+        nodes.ordersBackdrop.classList.remove("hidden");
+        nodes.ordersModal.setAttribute("aria-hidden", "false");
+        refreshIcons();
+    }
+
+    function showOrderLookup(order = null, newlyPlaced = false) {
+        nodes.ordersTitle.textContent = "Tra cứu đơn hàng";
+        nodes.orderLookupPanel.classList.remove("hidden");
+        nodes.orderList.classList.add("hidden");
+        nodes.orderList.innerHTML = "";
+        nodes.orderLookupResult.innerHTML = "";
+        nodes.orderTrackingForm.reset();
+
+        if (order) {
+            nodes.orderTrackingCode.value = order.trackingCode || "";
+            renderTrackedOrder(order, newlyPlaced);
+        }
+
+        openOrdersModal();
     }
 
     function orderDate(value) {
@@ -1416,6 +1445,68 @@
         return labels[String(method || "").toUpperCase()] || "Chưa có thông tin";
     }
 
+    function renderTrackedOrder(order, newlyPlaced = false) {
+        const statusKey = String(order.status || "pending").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+        const successNotice = newlyPlaced
+            ? `<p class="order-placed-notice"><i data-lucide="circle-check"></i><span>Đặt hàng thành công. Hãy lưu mã vận đơn để tra cứu đơn hàng sau này.</span></p>`
+            : "";
+        const items = Array.isArray(order.items) ? order.items : [];
+
+        nodes.orderLookupResult.innerHTML = `
+            ${successNotice}
+            <article class="order-card">
+                <div class="order-card-head">
+                    <div class="order-head-id">
+                        <i data-lucide="package"></i>
+                        <strong>Đơn hàng #${escapeHtml(order.id)}</strong>
+                    </div>
+                    <span class="order-status-badge ${statusKey}">${escapeHtml(orderStatusLabel(order.status))}</span>
+                </div>
+                <div class="order-tracking-code">
+                    <span>Mã vận đơn</span>
+                    <code>${escapeHtml(order.trackingCode || "Chưa có mã vận đơn")}</code>
+                </div>
+                <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
+                <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))}</small>
+                <div class="order-card-items">
+                    ${items.length ? items.map((item) => `
+                        <div class="order-sub-item">
+                            <span>${escapeHtml(item.product?.name || "Sản phẩm")}</span>
+                            <span>× ${Number(item.quantity) || 0}</span>
+                        </div>
+                    `).join("") : `<span>Chưa có thông tin sản phẩm.</span>`}
+                </div>
+                <div class="order-card-total">
+                    <span>Tổng thanh toán:</span>
+                    <strong>${formatMoney(order.totalAmount)}</strong>
+                </div>
+            </article>
+        `;
+        refreshIcons();
+    }
+
+    async function handleOrderTrackingSubmit(event) {
+        event.preventDefault();
+        const trackingCode = nodes.orderTrackingCode.value.trim();
+        if (!trackingCode) return;
+
+        nodes.trackOrderButton.disabled = true;
+        nodes.trackOrderButton.innerHTML = `<i data-lucide="loader-circle"></i> Đang tra cứu`;
+        nodes.orderLookupResult.innerHTML = `<div class="empty-state"><div class="admin-spinner"></div><p>Đang tìm đơn hàng…</p></div>`;
+        refreshIcons();
+
+        try {
+            const order = await window.emarketApi.trackOrder(trackingCode);
+            renderTrackedOrder(order);
+        } catch (error) {
+            nodes.orderLookupResult.innerHTML = `<p class="order-lookup-message error" role="alert">Không tìm thấy đơn hàng hoặc mã vận đơn không hợp lệ. ${escapeHtml(error.message)}</p>`;
+        } finally {
+            nodes.trackOrderButton.disabled = false;
+            nodes.trackOrderButton.innerHTML = `<i data-lucide="search"></i> Tra cứu`;
+            refreshIcons();
+        }
+    }
+
     async function cancelCustomerOrder(button) {
         const orderId = button.dataset.cancelOrder;
         if (!window.confirm(`Bạn chắc chắn muốn hủy đơn hàng #${orderId}?`)) return;
@@ -1439,11 +1530,11 @@
             openAuth("login");
             return;
         }
+        nodes.ordersTitle.textContent = "Đơn hàng của tôi";
+        nodes.orderLookupPanel.classList.add("hidden");
         nodes.orderList.innerHTML = `<div class="empty-state"><div class="admin-spinner"></div><p>Đang tải danh sách đơn hàng…</p></div>`;
-        nodes.ordersModal.classList.remove("hidden");
-        nodes.ordersBackdrop.classList.remove("hidden");
-        nodes.ordersModal.setAttribute("aria-hidden", "false");
-        refreshIcons();
+        nodes.orderList.classList.remove("hidden");
+        openOrdersModal();
 
         try {
             const orders = await window.emarketApi.getMyOrders();
@@ -1462,6 +1553,12 @@
                         </div>
                         <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
                         <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))}</small>
+                        ${order.trackingCode ? `
+                            <div class="order-tracking-code order-history-tracking">
+                                <span>Mã vận đơn</span>
+                                <code>${escapeHtml(order.trackingCode)}</code>
+                            </div>
+                        ` : ""}
                         <div class="order-card-items">
                             ${(order.items || []).map((item) => `
                                 <div class="order-sub-item">
@@ -2233,7 +2330,8 @@
         // Orders Modal
         if (nodes.closeOrders) nodes.closeOrders.addEventListener("click", closeOrders);
         if (nodes.ordersBackdrop) nodes.ordersBackdrop.addEventListener("click", closeOrders);
-        if (nodes.orderLookupButton) nodes.orderLookupButton.addEventListener("click", showMyOrders);
+        if (nodes.orderLookupButton) nodes.orderLookupButton.addEventListener("click", () => showOrderLookup());
+        if (nodes.orderTrackingForm) nodes.orderTrackingForm.addEventListener("submit", (event) => void handleOrderTrackingSubmit(event));
 
         // Catalog Panel
         if (nodes.catalogToggle && nodes.catalogPanel) {

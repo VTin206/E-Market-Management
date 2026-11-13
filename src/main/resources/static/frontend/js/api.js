@@ -171,6 +171,10 @@
                 body: JSON.stringify(payload)
             });
         },
+        async trackOrder(trackingCode) {
+            const query = new URLSearchParams({ trackingCode: trackingCode.trim() });
+            return request(`/api/orders/track?${query.toString()}`, { method: "POST" });
+        },
         async getMyOrders() {
             return request("/api/orders/me");
         },

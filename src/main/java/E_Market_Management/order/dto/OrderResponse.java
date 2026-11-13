@@ -3,6 +3,7 @@ package E_Market_Management.order.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import E_Market_Management.order.entity.METHOD;
 import lombok.*;
@@ -21,6 +22,7 @@ public class OrderResponse {
     private String status;
     private LocalDateTime createdAt;
     private METHOD paymentMethod;
+    private UUID trackingCode;
 
     private List<OrderItemResponse> items;
 }

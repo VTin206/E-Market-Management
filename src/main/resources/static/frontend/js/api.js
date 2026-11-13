@@ -3,6 +3,7 @@
     const userNameKey = "emarket_user_name";
     const userRoleKey = "emarket_user_role";
     const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
+    let refreshInFlight = null;
 
     function getToken() {
         return localStorage.getItem(storageKey);
@@ -24,7 +25,62 @@
         if (userName) localStorage.setItem(userNameKey, userName);
     }
 
-    async function request(path, options = {}) {
+    async function responseError(response) {
+        let message = `Request failed: ${response.status}`;
+        try {
+            const body = await response.json();
+            message = body.detail || body.message || body.error || message;
+        } catch (error) {
+            message = response.statusText || message;
+        }
+        return new Error(message);
+    }
+
+    function isAuthSessionEndpoint(path) {
+        return [
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/logout"
+        ].includes(path);
+    }
+
+    async function refreshAccessToken(accessTokenAtFailure) {
+        if (!refreshInFlight) {
+            const performRefresh = async () => {
+                const latestAccessToken = getToken();
+                if (latestAccessToken && latestAccessToken !== accessTokenAtFailure) {
+                    return { accessToken: latestAccessToken };
+                }
+
+                const response = await fetch(`${apiBase}/api/auth/refresh`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+
+                if (!response.ok) throw await responseError(response);
+
+                const data = await response.json();
+                if (!data.accessToken) throw new Error("Không nhận được access token mới.");
+
+                setToken(data.accessToken);
+                if (data.role) localStorage.setItem(userRoleKey, data.role);
+                return data;
+            };
+
+            const refreshRequest = typeof navigator !== "undefined" && navigator.locks?.request
+                ? navigator.locks.request("emarket-auth-refresh", performRefresh)
+                : performRefresh();
+
+            refreshInFlight = Promise.resolve(refreshRequest).finally(() => {
+                refreshInFlight = null;
+            });
+        }
+
+        return refreshInFlight;
+    }
+
+    async function request(path, options = {}, allowRefresh = true) {
         const headers = {
             ...(options.headers || {})
         };
@@ -34,24 +90,28 @@
             headers["Content-Type"] = "application/json";
         }
 
-        if (token) {
+        if (token && path !== "/api/auth/refresh" && path !== "/api/auth/logout") {
             headers.Authorization = `Bearer ${token}`;
         }
 
         const response = await fetch(`${apiBase}${path}`, {
             ...options,
-            headers
+            headers,
+            credentials: options.credentials || "include"
         });
 
-        if (!response.ok) {
-            let message = `Request failed: ${response.status}`;
+        if (response.status === 401 && allowRefresh && token && !isAuthSessionEndpoint(path)) {
             try {
-                const body = await response.json();
-                message = body.detail || body.message || body.error || message;
+                await refreshAccessToken(token);
             } catch (error) {
-                message = response.statusText || message;
+                if (getToken() === token) clearToken();
+                throw error;
             }
-            throw new Error(message);
+            return request(path, options, false);
+        }
+
+        if (!response.ok) {
+            throw await responseError(response);
         }
 
         if (response.status === 204) {
@@ -123,6 +183,13 @@
             setUserName(payload.userName);
             if (data.role) localStorage.setItem(userRoleKey, data.role);
             return data;
+        },
+        async logout() {
+            try {
+                await request("/api/auth/logout", { method: "POST" });
+            } finally {
+                clearToken();
+            }
         },
         async getProducts() {
             const products = [];
@@ -205,8 +272,8 @@
                 body: JSON.stringify({ role })
             });
         },
-        async getAllOrders() {
-            return request("/api/orders");
+        async getAllOrders(page = 0, size = 10) {
+            return request(`/api/orders?page=${page}&size=${size}`);
         },
         async updateOrderStatus(orderId, status) {
             return request("/api/orders/" + orderId, {

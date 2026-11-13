@@ -8,6 +8,13 @@
 - Open the storefront at `http://localhost:8080/frontend/index.html`.
 - Run backend tests with `./mvnw test` (Windows PowerShell: `./mvnw.cmd test`).
 
+## Authentication sessions
+
+- `JWT_EXPIRATION` is the access-token lifetime in milliseconds; the example uses 15 minutes. `JWT_REFRESH_EXPIRATION` is the refresh-token lifetime in milliseconds; the default is 7 days.
+- Login and registration return an access token and set a rotating refresh token in an `HttpOnly` cookie. The refresh token itself is stored as a SHA-256 hash in the database.
+- Set `AUTH_REFRESH_COOKIE_SECURE=true` when serving over HTTPS. Keep it `false` for local HTTP development.
+- When using the static frontend at `http://localhost:5173`, keep that origin in `CORS_ALLOWED_ORIGINS`. The Spring-served frontend at `http://localhost:8080` is same-origin and needs no CORS entry.
+
 ## API behavior
 
 - API routes use the `/api` prefix. Errors use the shared JSON fields `timestamp`, `status`, `error`, `message`, and `path`.

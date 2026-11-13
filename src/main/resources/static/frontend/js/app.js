@@ -26,6 +26,8 @@
         admin: {
             products: [],
             orders: [],
+            ordersPage: 0,
+            ordersPageInfo: null,
             categories: [],
             brands: [],
             memberships: [],
@@ -1685,11 +1687,12 @@
         const products = state.admin.products;
         const orders = state.admin.orders;
         const pendingOrders = orders.filter((order) => order.status === "PENDING").length;
+        const totalOrders = Number(state.admin.ordersPageInfo?.totalElements ?? orders.length);
         const lowStock = products.filter((product) => Number(product.stock) <= 5).length;
         const items = [
             { label: "Sản phẩm", value: products.length, icon: "package" },
-            { label: "Tổng đơn hàng", value: orders.length, icon: "clipboard-list" },
-            { label: "Chờ xác nhận", value: pendingOrders, icon: "clock-3" },
+            { label: "Tổng đơn hàng", value: totalOrders, icon: "clipboard-list" },
+            { label: "Chờ xác nhận (trang)", value: pendingOrders, icon: "clock-3" },
             { label: "Sắp hết hàng", value: lowStock, icon: "alert-triangle" }
         ];
         nodes.adminSummary.innerHTML = items.map((item) =>
@@ -1724,6 +1727,13 @@
 
     function renderAdminOrders() {
         const orders = [...state.admin.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const page = state.admin.ordersPageInfo;
+        const pagination = Number(page?.totalPages) > 1
+            ? '<div class="admin-user-pagination"><button class="admin-inline-button" type="button" data-order-page="' + (page.number - 1) + '"'
+                + (page.first ? " disabled" : "") + '>Trước</button><span>Trang ' + (page.number + 1) + ' / ' + page.totalPages + ' · '
+                + Number(page.totalElements || 0).toLocaleString("vi-VN") + ' đơn hàng</span><button class="admin-inline-button" type="button" data-order-page="'
+                + (page.number + 1) + '"' + (page.last ? " disabled" : "") + '>Tiếp</button></div>'
+            : page ? '<p class="admin-user-count">' + Number(page.totalElements || 0).toLocaleString("vi-VN") + ' đơn hàng</p>' : "";
         return adminHeading("Quản lý đơn hàng", "Theo dõi thông tin nhận hàng và cập nhật tiến độ đơn.", "", "")
             + (orders.length ? '<div class="admin-order-list">' + orders.map((order) => {
                 const allowed = order.status === "PENDING" ? ["PROCESSING", "CANCELLED"]
@@ -1746,7 +1756,8 @@
                     ).join("") || '<span>Đơn chưa có sản phẩm.</span>') + '</div>'
                     + '<div class="admin-order-bottom"><div><span>Tổng đơn hàng:</span><strong>' + formatMoney(order.totalAmount) + '</strong></div>'
                     + statusControl + '</div></article>';
-            }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới từ khách sẽ xuất hiện ở đây.</p></div>');
+            }).join("") + '</div>' : '<div class="admin-message"><strong>Chưa có đơn hàng</strong><p>Đơn hàng mới từ khách sẽ xuất hiện ở đây.</p></div>')
+            + pagination;
     }
 
     function renderAdminProductForm() {
@@ -1888,19 +1899,21 @@
                 : '<div class="admin-message"><strong>Chưa có người dùng</strong><p>Tài khoản đã đăng ký sẽ xuất hiện ở đây.</p></div>');
     }
 
-    async function loadAdminData() {
+    async function loadAdminData(orderPage = state.admin.ordersPage) {
         state.admin.error = "";
         nodes.adminContent.innerHTML = '<div class="admin-message"><span class="admin-spinner"></span><p>Đang tải dữ liệu quản trị…</p></div>';
         try {
             const [orders, products, categories, brands, memberships, users] = await Promise.all([
-                window.emarketApi.getAllOrders(),
+                window.emarketApi.getAllOrders(orderPage, 10),
                 window.emarketApi.getProducts(),
                 window.emarketApi.getCategories(),
                 window.emarketApi.getBrands(),
                 window.emarketApi.getMemberships(),
                 window.emarketApi.getUsers(state.admin.usersPage, 20)
             ]);
-            state.admin.orders = orders;
+            state.admin.orders = orders.content || [];
+            state.admin.ordersPage = Number(orders.number || 0);
+            state.admin.ordersPageInfo = orders;
             state.admin.products = products;
             state.admin.categories = categories;
             state.admin.brands = brands;
@@ -2432,13 +2445,26 @@
         if (nodes.myOrdersButton) nodes.myOrdersButton.addEventListener("click", showMyOrders);
         if (nodes.logoutButton) {
             nodes.logoutButton.addEventListener("click", () => {
-                window.emarketApi.clearToken();
-                state.cart = [];
-                restoreGuestCart();
-                updateAccountState();
-                renderReviewForm();
-                renderReviewList();
-                showToast("Bạn đã đăng xuất thành công.", "info");
+                void (async () => {
+                    let logoutError = null;
+                    try {
+                        await window.emarketApi.logout();
+                    } catch (error) {
+                        logoutError = error;
+                    }
+
+                    state.cart = [];
+                    restoreGuestCart();
+                    updateAccountState();
+                    renderReviewForm();
+                    renderReviewList();
+                    showToast(
+                        logoutError
+                            ? "Đã đăng xuất trên trình duyệt, nhưng chưa thể xác nhận thu hồi phiên trên máy chủ."
+                            : "Bạn đã đăng xuất thành công.",
+                        logoutError ? "error" : "info"
+                    );
+                });
             });
         }
 
@@ -2519,6 +2545,11 @@
                 const userPageButton = event.target.closest("[data-user-page]");
                 if (userPageButton && !userPageButton.disabled) {
                     await loadAdminUsers(Number(userPageButton.dataset.userPage));
+                    return;
+                }
+                const orderPageButton = event.target.closest("[data-order-page]");
+                if (orderPageButton && !orderPageButton.disabled) {
+                    await loadAdminData(Number(orderPageButton.dataset.orderPage));
                     return;
                 }
                 const updateUserRoleButton = event.target.closest("[data-user-role-update]");

@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,11 +63,14 @@ public class OrderController {
     @GetMapping
     @Operation(
         summary = "Lấy toàn bộ đơn hàng",
-        description = "Trả về danh sách đơn hàng trong hệ thống. Chỉ quản trị viên được phép truy cập."
+        description = "Trả về một trang đơn hàng trong hệ thống. Chỉ quản trị viên được phép truy cập."
     )
-    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+    public ResponseEntity<Page<OrderResponse>> getAllOrders(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
         return ResponseEntity.ok(
-            orderService.getAllOrders()
+            orderService.getAllOrders(page, size)
         );
     }
 

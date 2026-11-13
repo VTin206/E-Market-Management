@@ -184,10 +184,11 @@ i[data-lucide] {
     background: #fff;
     border-radius: var(--radius-md);
 }
-.brand-logo-header {
+.site-header .brand-logo-header {
     padding: 0;
     background: transparent;
     border-radius: 0;
+    box-shadow: none;
     filter: brightness(0) invert(1);
 }
 .brand-mark {

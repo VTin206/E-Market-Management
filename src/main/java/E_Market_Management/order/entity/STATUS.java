@@ -2,7 +2,10 @@ package E_Market_Management.order.entity;
 
 public enum STATUS {
     PENDING,
+    CONFIRMED,
     PROCESSING,
+    SHIPPED,
+    DELIVERED,
     COMPLETED,
     CANCELLED;
 
@@ -11,8 +14,11 @@ public enum STATUS {
         if (this == nextStatus) return true;
 
         return switch (this) {
-            case PENDING -> nextStatus == PROCESSING || nextStatus == CANCELLED;
-            case PROCESSING -> nextStatus == COMPLETED || nextStatus == CANCELLED;
+            case PENDING -> nextStatus == CONFIRMED || nextStatus == PROCESSING || nextStatus == CANCELLED;
+            case CONFIRMED -> nextStatus == PROCESSING || nextStatus == CANCELLED;
+            case PROCESSING -> nextStatus == SHIPPED || nextStatus == CANCELLED;
+            case SHIPPED -> nextStatus == DELIVERED;
+            case DELIVERED -> nextStatus == COMPLETED;
             case COMPLETED, CANCELLED -> false;
         };
     }

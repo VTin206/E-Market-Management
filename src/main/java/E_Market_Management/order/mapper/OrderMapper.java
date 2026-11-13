@@ -44,6 +44,8 @@ public class OrderMapper {
             .paymentStatus(order.getPayment() != null ? order.getPayment().getStatus() : null)
             .items(itemResponses)
             .trackingCode(order.getTrackingCode())
+            .shippingCarrier(order.getShippingCarrier())
+            .carrierTrackingNumber(order.getCarrierTrackingNumber())
             .build();
     }
 }

@@ -268,6 +268,15 @@ public class OrderService {
             );
         }
 
+        if (nextStatus == STATUS.SHIPPED) {
+            if (request.getShippingCarrier() == null || request.getShippingCarrier().isBlank()
+                || request.getCarrierTrackingNumber() == null || request.getCarrierTrackingNumber().isBlank()) {
+                throw new IllegalArgumentException("Khi chuyển sang đang giao, cần nhập hãng vận chuyển và mã vận đơn của hãng");
+            }
+            order.setShippingCarrier(request.getShippingCarrier().trim());
+            order.setCarrierTrackingNumber(request.getCarrierTrackingNumber().trim());
+        }
+
         boolean justCompleted = currentStatus != STATUS.COMPLETED && nextStatus == STATUS.COMPLETED;
         boolean justCancelled = currentStatus != STATUS.CANCELLED && nextStatus == STATUS.CANCELLED;
 

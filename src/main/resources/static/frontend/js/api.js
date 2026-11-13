@@ -289,10 +289,10 @@
         async getAllOrders(page = 0, size = 10) {
             return request(`/api/orders?page=${page}&size=${size}`);
         },
-        async updateOrderStatus(orderId, status) {
+        async updateOrderStatus(orderId, payload) {
             return request("/api/orders/" + orderId, {
                 method: "PUT",
-                body: JSON.stringify({ status })
+                body: JSON.stringify(payload)
             });
         },
         async confirmOrderPayment(orderId) {

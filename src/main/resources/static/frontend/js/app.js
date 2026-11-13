@@ -1549,7 +1549,7 @@
     function renderTrackedOrder(order, newlyPlaced = false) {
         const statusKey = String(order.status || "pending").toLowerCase().replace(/[^a-z0-9_-]/g, "");
         const successNotice = newlyPlaced
-            ? `<p class="order-placed-notice"><i data-lucide="circle-check"></i><span>Đặt hàng thành công. Hãy lưu mã vận đơn để tra cứu đơn hàng sau này.</span></p>`
+            ? `<p class="order-placed-notice"><i data-lucide="circle-check"></i><span>Đặt hàng thành công. Hãy lưu mã tra cứu đơn hàng để xem tiến trình giao hàng sau này.</span></p>`
             : "";
         const items = Array.isArray(order.items) ? order.items : [];
 
@@ -1564,9 +1564,10 @@
                     <span class="order-status-badge ${statusKey}">${escapeHtml(orderStatusLabel(order.status))}</span>
                 </div>
                 <div class="order-tracking-code">
-                    <span>Mã vận đơn</span>
+                    <span>Mã tra cứu đơn hàng</span>
                     <code>${escapeHtml(order.trackingCode || "Chưa có mã vận đơn")}</code>
                 </div>
+                ${order.carrierTrackingNumber ? `<div class="order-tracking-code"><span>${escapeHtml(order.shippingCarrier || "Đơn vị vận chuyển")}</span><code>${escapeHtml(order.carrierTrackingNumber)}</code></div>` : ""}
                 <small class="order-date"><i data-lucide="clock"></i> ${escapeHtml(orderDate(order.createdAt))}</small>
                 <small class="order-date">Thanh toán: ${escapeHtml(paymentMethodLabel(order.paymentMethod))} · ${escapeHtml(paymentStatusLabel(order.paymentStatus))}</small>
                 <div class="order-card-items">
@@ -1751,8 +1752,11 @@
             : page ? '<p class="admin-user-count">' + Number(page.totalElements || 0).toLocaleString("vi-VN") + ' đơn hàng</p>' : "";
         return adminHeading("Quản lý đơn hàng", "Theo dõi thông tin nhận hàng và cập nhật tiến độ đơn.", "", "")
             + (orders.length ? '<div class="admin-order-list">' + orders.map((order) => {
-                const allowed = order.status === "PENDING" ? ["PROCESSING", "CANCELLED"]
-                    : order.status === "PROCESSING" ? ["COMPLETED", "CANCELLED"] : [];
+                const allowed = order.status === "PENDING" ? ["CONFIRMED", "PROCESSING", "CANCELLED"]
+                    : order.status === "CONFIRMED" ? ["PROCESSING", "CANCELLED"]
+                    : order.status === "PROCESSING" ? ["SHIPPED", "CANCELLED"]
+                    : order.status === "SHIPPED" ? ["DELIVERED"]
+                    : order.status === "DELIVERED" ? ["COMPLETED"] : [];
                 const canConfirmPayment = ["UNPAID", "PENDING"].includes(order.paymentStatus)
                     && order.status !== "CANCELLED";
                 const confirmPaymentButton = canConfirmPayment
@@ -1762,7 +1766,12 @@
                     ? '<div class="admin-order-status"><label for="orderStatus' + order.id + '">Trạng thái:</label>'
                         + '<select id="orderStatus' + order.id + '" data-order-status="' + order.id + '">'
                         + allowed.map((status) => '<option value="' + status + '">' + escapeHtml(orderStatusLabel(status)) + '</option>').join("")
-                        + '</select><button class="admin-inline-button" type="button" data-order-update="' + order.id + '">Lưu</button></div>'
+                        + '</select>'
+                        + (order.status === "PROCESSING"
+                            ? '<input data-shipping-carrier="' + order.id + '" maxlength="100" placeholder="Hãng vận chuyển">'
+                                + '<input data-carrier-tracking-number="' + order.id + '" maxlength="150" placeholder="Mã vận đơn hãng">'
+                            : "")
+                        + '<button class="admin-inline-button" type="button" data-order-update="' + order.id + '">Lưu</button></div>'
                     : '<span class="admin-status-badge ' + String(order.status || "").toLowerCase() + '">' + escapeHtml(orderStatusLabel(order.status)) + '</span>';
                 return '<article class="admin-order-card"><div class="admin-order-top"><div><span class="admin-order-number">Đơn #' + escapeHtml(order.id)
                     + '</span><h3>' + escapeHtml(order.customerName || "Khách hàng") + '</h3></div><span class="admin-status-badge '
@@ -2684,9 +2693,19 @@
                     const orderId = Number(updateOrderButton.dataset.orderUpdate);
                     const select = nodes.adminContent.querySelector('[data-order-status="' + orderId + '"]');
                     if (!select?.value) return;
+                    const shippingCarrier = nodes.adminContent.querySelector('[data-shipping-carrier="' + orderId + '"]')?.value.trim() || "";
+                    const carrierTrackingNumber = nodes.adminContent.querySelector('[data-carrier-tracking-number="' + orderId + '"]')?.value.trim() || "";
+                    if (select.value === "SHIPPED" && (!shippingCarrier || !carrierTrackingNumber)) {
+                        showToast("Nhập hãng vận chuyển và mã vận đơn trước khi bàn giao đơn.", "error");
+                        return;
+                    }
                     updateOrderButton.disabled = true;
                     try {
-                        await window.emarketApi.updateOrderStatus(orderId, select.value);
+                        await window.emarketApi.updateOrderStatus(orderId, {
+                            status: select.value,
+                            shippingCarrier,
+                            carrierTrackingNumber
+                        });
                         showToast("Đã cập nhật trạng thái đơn hàng.", "success");
                         await loadAdminData();
                     } catch (error) {

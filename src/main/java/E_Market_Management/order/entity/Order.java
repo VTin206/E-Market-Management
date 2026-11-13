@@ -43,6 +43,12 @@ public class Order {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "shipping_carrier", length = 100)
+    private String shippingCarrier;
+
+    @Column(name = "carrier_tracking_number", length = 150)
+    private String carrierTrackingNumber;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;

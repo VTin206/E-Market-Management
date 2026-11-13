@@ -25,6 +25,8 @@ public class OrderResponse {
     private METHOD paymentMethod;
     private PAYMENT_STATUS paymentStatus;
     private UUID trackingCode;
+    private String shippingCarrier;
+    private String carrierTrackingNumber;
 
     private List<OrderItemResponse> items;
 }

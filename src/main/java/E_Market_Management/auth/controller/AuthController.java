@@ -18,11 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 import E_Market_Management.auth.dto.AuthResponse;
 import E_Market_Management.auth.dto.AuthSession;
 import E_Market_Management.auth.dto.ChangePasswordRequest;
+import E_Market_Management.auth.dto.ForgotPasswordRequest;
 import E_Market_Management.auth.dto.LoginRequest;
 import E_Market_Management.auth.dto.RegisterRequest;
+import E_Market_Management.auth.dto.ResetPasswordRequest;
 import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.auth.service.AuthService;
+import E_Market_Management.auth.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.Map;
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,12 +36,14 @@ public class AuthController {
     private static final String REFRESH_COOKIE_PATH = "/api/auth";
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     @Value("${auth.refresh-cookie.secure:false}")
     private boolean secureRefreshCookie;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, PasswordResetService passwordResetService) {
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -91,6 +97,24 @@ public class AuthController {
     ) {
         Long userId = userDetails.getId();
         authService.changePassword(request, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Yêu cầu đặt lại mật khẩu qua email")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+        @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        passwordResetService.requestReset(request.getEmail());
+        return ResponseEntity.accepted().body(Map.of(
+            "message", "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Đặt mật khẩu mới bằng liên kết email")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
         return ResponseEntity.noContent().build();
     }
 

@@ -41,7 +41,9 @@
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
-            "/api/auth/logout"
+            "/api/auth/logout",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password"
         ].includes(path);
     }
 
@@ -260,6 +262,18 @@
         async changePassword(payload) {
             return request("/api/auth/change-password", {
                 method: "PATCH",
+                body: JSON.stringify(payload)
+            });
+        },
+        async requestPasswordReset(email) {
+            return request("/api/auth/forgot-password", {
+                method: "POST",
+                body: JSON.stringify({ email })
+            });
+        },
+        async resetPassword(payload) {
+            return request("/api/auth/reset-password", {
+                method: "POST",
                 body: JSON.stringify(payload)
             });
         },

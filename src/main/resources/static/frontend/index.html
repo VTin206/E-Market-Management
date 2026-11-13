@@ -678,6 +678,9 @@
             <p class="auth-switch-text">
                 Chưa có tài khoản? <button type="button" class="auth-switch-link" data-auth-open="register">Đăng ký thành viên</button>
             </p>
+            <p class="auth-switch-text">
+                <button type="button" class="auth-switch-link" data-auth-mode="forgot">Quên mật khẩu?</button>
+            </p>
         </form>
         <form class="auth-form hidden" id="registerForm">
             <label>Tên đăng nhập *
@@ -700,6 +703,33 @@
             </button>
             <p class="auth-switch-text">
                 Đã có tài khoản? <button type="button" class="auth-switch-link" data-auth-open="login">Đăng nhập ngay</button>
+            </p>
+        </form>
+        <form class="auth-form hidden" id="forgotPasswordForm">
+            <p class="auth-form-description">Nhập email đã đăng ký. Nếu email tồn tại, bạn sẽ nhận được liên kết đặt lại mật khẩu.</p>
+            <label>Địa chỉ Email
+                <input name="email" type="email" required autocomplete="email" placeholder="email@example.com">
+            </label>
+            <button class="primary-button full" type="submit">
+                <i data-lucide="mail"></i> Gửi liên kết đặt lại
+            </button>
+            <p class="auth-switch-text">
+                <button type="button" class="auth-switch-link" data-auth-mode="login">Quay lại đăng nhập</button>
+            </p>
+        </form>
+        <form class="auth-form hidden" id="resetPasswordForm">
+            <input name="token" type="hidden">
+            <label>Mật khẩu mới
+                <input name="newPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự">
+            </label>
+            <label>Xác nhận mật khẩu mới
+                <input name="confirmPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới">
+            </label>
+            <button class="primary-button full" type="submit">
+                <i data-lucide="key-round"></i> Lưu mật khẩu mới
+            </button>
+            <p class="auth-switch-text">
+                <button type="button" class="auth-switch-link" data-auth-mode="login">Quay lại đăng nhập</button>
             </p>
         </form>
     </section>

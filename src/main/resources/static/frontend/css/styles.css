@@ -2343,6 +2343,11 @@ i[data-lucide] {
     gap: 14px;
     padding: 18px 20px 22px;
 }
+.auth-form-description {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
 .auth-form label {
     display: grid;
     gap: 6px;

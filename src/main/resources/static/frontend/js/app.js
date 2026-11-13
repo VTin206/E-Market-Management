@@ -133,8 +133,12 @@
         authModal: $("#authModal"),
         authBackdrop: $("#authBackdrop"),
         closeAuth: $("#closeAuth"),
+        authModalTitle: $("#authModalTitle"),
+        authTabs: $(".auth-tabs"),
         loginForm: $("#loginForm"),
         registerForm: $("#registerForm"),
+        forgotPasswordForm: $("#forgotPasswordForm"),
+        resetPasswordForm: $("#resetPasswordForm"),
         catalogPanel: $("#catalogPanel"),
         catalogToggle: $("#catalogToggle"),
         closeCatalog: $("#closeCatalog"),
@@ -2058,9 +2062,24 @@
     }
 
     function setAuthTab(tab) {
-        document.querySelectorAll("[data-auth-tab]").forEach((button) => button.classList.toggle("active", button.dataset.authTab === tab));
-        nodes.loginForm.classList.toggle("hidden", tab !== "login");
-        nodes.registerForm.classList.toggle("hidden", tab !== "register");
+        setAuthMode(tab);
+    }
+
+    function setAuthMode(mode) {
+        const isAccountTab = mode === "login" || mode === "register";
+        if (nodes.authTabs) nodes.authTabs.classList.toggle("hidden", !isAccountTab);
+        if (nodes.authModalTitle) {
+            nodes.authModalTitle.textContent = mode === "forgot"
+                ? "Đặt lại mật khẩu"
+                : mode === "reset"
+                    ? "Tạo mật khẩu mới"
+                    : "Tài khoản thành viên";
+        }
+        document.querySelectorAll("[data-auth-tab]").forEach((button) => button.classList.toggle("active", button.dataset.authTab === mode));
+        if (nodes.loginForm) nodes.loginForm.classList.toggle("hidden", mode !== "login");
+        if (nodes.registerForm) nodes.registerForm.classList.toggle("hidden", mode !== "register");
+        if (nodes.forgotPasswordForm) nodes.forgotPasswordForm.classList.toggle("hidden", mode !== "forgot");
+        if (nodes.resetPasswordForm) nodes.resetPasswordForm.classList.toggle("hidden", mode !== "reset");
     }
 
     function updateAccountState() {
@@ -2116,6 +2135,46 @@
             renderReviewList();
         } catch (error) {
             showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`, "error");
+        }
+    }
+
+    async function handleForgotPasswordSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const email = new FormData(form).get("email");
+        try {
+            await window.emarketApi.requestPasswordReset(email);
+            form.reset();
+            showToast("Nếu email tồn tại, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.", "success");
+            setAuthMode("login");
+        } catch (error) {
+            showToast(`Không thể gửi yêu cầu đặt lại mật khẩu: ${error.message}`, "error");
+        }
+    }
+
+    async function handleResetPasswordSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const payload = Object.fromEntries(new FormData(form).entries());
+        try {
+            await window.emarketApi.resetPassword(payload);
+            form.reset();
+            setAuthMode("login");
+            showToast("Mật khẩu đã được đổi. Hãy đăng nhập bằng mật khẩu mới.", "success");
+        } catch (error) {
+            showToast(`Không thể đặt lại mật khẩu: ${error.message}`, "error");
+        }
+    }
+
+    function openResetPassword(token) {
+        if (!token || !nodes.resetPasswordForm) return;
+        nodes.resetPasswordForm.elements.token.value = token;
+        openAuth("login");
+        setAuthMode("reset");
+        try {
+            window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
+        } catch (error) {
+            // Keep the token in the current URL if the browser does not allow history updates.
         }
     }
 
@@ -2185,6 +2244,7 @@
             const search = event.target.closest("[data-menu-search]");
             const categoryFilter = event.target.closest("[data-category-filter]");
             const authOpen = event.target.closest("[data-auth-open]");
+            const authMode = event.target.closest("[data-auth-mode]");
             const buyNow = event.target.closest("[data-buy-now]");
             const retryProducts = event.target.closest("[data-retry-products]");
             const removeFilter = event.target.closest("[data-remove-filter]");
@@ -2275,6 +2335,7 @@
             }
 
             if (authOpen) openAuth(authOpen.dataset.authOpen);
+            if (authMode) setAuthMode(authMode.dataset.authMode);
         });
 
         // Search Input & Clear
@@ -2441,6 +2502,8 @@
 
         if (nodes.loginForm) nodes.loginForm.addEventListener("submit", (event) => handleAuthSubmit(event, "login"));
         if (nodes.registerForm) nodes.registerForm.addEventListener("submit", (event) => handleAuthSubmit(event, "register"));
+        if (nodes.forgotPasswordForm) nodes.forgotPasswordForm.addEventListener("submit", handleForgotPasswordSubmit);
+        if (nodes.resetPasswordForm) nodes.resetPasswordForm.addEventListener("submit", handleResetPasswordSubmit);
         if (nodes.myProfileButton) nodes.myProfileButton.addEventListener("click", () => void showProfile());
         if (nodes.myOrdersButton) nodes.myOrdersButton.addEventListener("click", showMyOrders);
         if (nodes.logoutButton) {
@@ -2684,6 +2747,8 @@
 
     async function init() {
         bindEvents();
+        const resetToken = new URLSearchParams(window.location.search).get("resetToken");
+        if (resetToken) openResetPassword(resetToken);
         initHeroCarousel();
         renderCart();
         updateAccountState();

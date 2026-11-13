@@ -138,7 +138,7 @@ public class OrderServiceTest {
         request.setStatus(STATUS.PROCESSING);
         OrderResponse expected = OrderResponse.builder().id(5L).status("PROCESSING").build();
 
-        when(orderRepository.findById(5L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
         when(orderMapper.toResponse(order, items)).thenReturn(expected);
 
@@ -146,6 +146,7 @@ public class OrderServiceTest {
 
         assertSame(expected, actual);
         assertEquals(STATUS.PROCESSING, order.getStatus());
+        verify(orderRepository).findByIdForUpdate(5L);
         verify(orderRepository).save(order);
     }
 
@@ -154,7 +155,7 @@ public class OrderServiceTest {
         Order order = Order.builder().id(5L).status(STATUS.PENDING).orderItems(List.of()).build();
         UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
         request.setStatus(STATUS.COMPLETED);
-        when(orderRepository.findById(5L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(order));
 
         assertThrows(ConflictException.class, () -> orderService.updateStatus(request, 5L));
         assertEquals(STATUS.PENDING, order.getStatus());
@@ -168,14 +169,14 @@ public class OrderServiceTest {
             .id(8L)
             .user(user)
             .totalAmount(new BigDecimal("5000000"))
-            .status(STATUS.PROCESSING)
+            .status(STATUS.DELIVERED)
             .orderItems(items)
             .build();
         Membership silverMembership = mock(Membership.class);
         UpdateOrderStatusRequest request = new UpdateOrderStatusRequest();
         request.setStatus(STATUS.COMPLETED);
 
-        when(orderRepository.findById(8L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(order));
         when(membershipRepository.findByTier(MembershipTier.SILVER))
             .thenReturn(Optional.of(silverMembership));
 

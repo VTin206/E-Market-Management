@@ -198,8 +198,11 @@ public class OrderService {
                 )
             );
 
-            product.setStock(product.getStock() - line.getQuantity());
+            int updated = productRepository.decreaseStock(product.getId(), line.getQuantity());
 
+            if(updated == 0) {
+                throw new ConflictException("Hết hàng!");
+            }
         }
         orderItemRepository.saveAll(orderItems);
         order.setTotalAmount(totalAmount);
@@ -256,7 +259,7 @@ public class OrderService {
 
     @Transactional 
     public OrderResponse updateStatus(UpdateOrderStatusRequest request, Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
 
         STATUS currentStatus = order.getStatus();
@@ -290,10 +293,11 @@ public class OrderService {
             List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
             for(OrderItem item : items) {
                 Product product = item.getProduct();
-                int currentStock = product.getStock();
                 int restock = item.getQuantity();
-                product.setStock(currentStock + restock);
-                productRepository.save(product);
+                int updated = productRepository.increaseStock(product.getId(), restock);
+                if (updated == 0) {
+                    throw new ConflictException("Hoàn tồn kho thất bại!");
+                }
             }
         }
 
@@ -348,7 +352,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponse cancelOrder(Long orderId, Long userId) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
 
         if (order.getUser() == null || !Objects.equals(order.getUser().getId(), userId)) {
@@ -367,10 +371,9 @@ public class OrderService {
         List<OrderItem> items = orderItemRepository.findAllByOrder_Id(orderId);
         for(OrderItem item : items) {
             Product product = item.getProduct();
-            int currentStock = product.getStock();
             int restock = item.getQuantity();
-            product.setStock(currentStock + restock);
-            productRepository.save(product);
+            int updated = productRepository.increaseStock(product.getId(), restock);
+            if(updated == 0) throw new ConflictException("Hoàn kho thất bại!");
         }
 
         return orderMapper.toResponse(orderRepository.save(order), items);

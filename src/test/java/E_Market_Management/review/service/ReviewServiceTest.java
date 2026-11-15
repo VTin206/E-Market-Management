@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import java.util.Optional;
 
@@ -18,6 +19,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import E_Market_Management.auth.security.CustomUserDetails;
+import E_Market_Management.order.entity.STATUS;
+import E_Market_Management.order.repository.OrderRepository;
+import E_Market_Management.product.entity.Product;
+import E_Market_Management.product.repository.ProductRepository;
 import E_Market_Management.review.dto.ReviewResponse;
 import E_Market_Management.review.dto.ReviewUpdateRequest;
 import E_Market_Management.review.entity.Review;
@@ -34,6 +39,12 @@ class ReviewServiceTest {
 
     @Mock
     private ReviewMapper reviewMapper;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @InjectMocks
     private ReviewService reviewService;
@@ -109,6 +120,27 @@ class ReviewServiceTest {
         reviewService.deleteReview(12L, new CustomUserDetails(owner));
 
         verify(reviewRepository).delete(review);
+    }
+
+    @Test
+    void postReview_whenProductWasNotPurchased_throwsForbidden() {
+        User owner = user(7L, ROLE.CUSTOMER);
+        Product product = Product.builder().id(3L).name("Phone").build();
+        when(productRepository.findById(3L)).thenReturn(Optional.of(product));
+        when(orderRepository.existsByUserAndProductAndStatus(7L, 3L, STATUS.COMPLETED))
+            .thenReturn(false);
+
+        ResponseStatusException exception = assertThrows(
+            ResponseStatusException.class,
+            () -> reviewService.postReview(
+                new E_Market_Management.review.dto.ReviewCreateRequest(),
+                new CustomUserDetails(owner),
+                3L
+            )
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        verify(reviewRepository, never()).save(any(Review.class));
     }
 
     private User user(Long id, ROLE role) {

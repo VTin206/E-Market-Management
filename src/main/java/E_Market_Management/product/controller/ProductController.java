@@ -1,6 +1,7 @@
 package E_Market_Management.product.controller;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,11 +32,26 @@ public class ProductController {
     public ResponseEntity<Page<ProductResponse>> getAllProducts(
         @RequestParam(required = false) Long categoryId,
         @RequestParam(required = false) Long brandId,
-        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String query,
+        @RequestParam(required = false) BigDecimal minPrice,
+        @RequestParam(required = false) BigDecimal maxPrice,
+        @RequestParam(required = false) String stockFilter,
+        @RequestParam(defaultValue = "default") String sort,
+        @RequestParam(defaultValue = "12") int size,
         @RequestParam(defaultValue = "0") int page
     ) {
         return ResponseEntity.ok(
-            productService.getAllProducts(categoryId, brandId, page, size)
+            productService.getAllProducts(
+                categoryId,
+                brandId,
+                query,
+                minPrice,
+                maxPrice,
+                stockFilter,
+                sort,
+                page,
+                size
+            )
         );
     }
 

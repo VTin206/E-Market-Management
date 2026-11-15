@@ -200,7 +200,7 @@ All application endpoints use the <code>/api</code> prefix. Protected endpoints 
 | Brands | <code>GET /api/brand</code>, <code>GET /api/brand/{id}</code> | <code>POST</code>, <code>PUT</code>, <code>DELETE</code> |
 | Memberships | — | <code>GET /api/membership</code> |
 
-Product listing supports <code>categoryId</code>, <code>brandId</code>, <code>page</code>, and <code>size</code> query parameters.
+Product listing supports <code>categoryId</code>, <code>brandId</code>, <code>query</code>, <code>minPrice</code>, <code>maxPrice</code>, <code>stockFilter</code>, <code>sort</code>, <code>page</code>, and <code>size</code> query parameters.
 
 ### Cart and orders
 

@@ -21,4 +21,5 @@ public class ReviewResponse {
     private Integer rating;
     private String comment;
     private LocalDateTime createdAt;
+    private boolean verifiedPurchase;
 }

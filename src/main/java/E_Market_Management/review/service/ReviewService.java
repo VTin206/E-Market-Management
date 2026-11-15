@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 import E_Market_Management.auth.security.CustomUserDetails;
 import E_Market_Management.product.entity.Product;
 import E_Market_Management.product.repository.ProductRepository;
+import E_Market_Management.order.entity.STATUS;
+import E_Market_Management.order.repository.OrderRepository;
 import E_Market_Management.review.dto.ReviewCreateRequest;
 import E_Market_Management.review.dto.ReviewResponse;
 import E_Market_Management.review.dto.ReviewUpdateRequest;
@@ -27,15 +29,18 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final ReviewMapper reviewMapper;
+    private final OrderRepository orderRepository;
 
     public ReviewService(
         ReviewRepository reviewRepository,
         ProductRepository productRepository,
-        ReviewMapper reviewMapper
+        ReviewMapper reviewMapper,
+        OrderRepository orderRepository
     ) {
         this.reviewRepository = reviewRepository;
         this.productRepository = productRepository;
         this.reviewMapper = reviewMapper;
+        this.orderRepository = orderRepository;
     }
 
     @Transactional(readOnly = true)
@@ -46,7 +51,7 @@ public class ReviewService {
 
         List<Review> reviews = reviewRepository.findAllByProduct_Id(productId);
         List<ReviewResponse> responses = reviews.stream()
-            .map(review -> reviewMapper.toResponse(review))
+            .map(this::toResponse)
             .toList();
         return responses;
     }
@@ -56,7 +61,7 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá"));
 
-        return reviewMapper.toResponse(review);
+        return toResponse(review);
     }
 
     @Transactional
@@ -68,6 +73,18 @@ public class ReviewService {
             throw new ResourceNotFoundException("Không tìm thấy tài khoản. Vui lòng đăng nhập trước khi đánh giá");
         }
 
+        boolean purchased = orderRepository.existsByUserAndProductAndStatus(
+            user.getId(),
+            productId,
+            STATUS.COMPLETED
+        );
+        if (!purchased) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Bạn chỉ có thể đánh giá sản phẩm đã mua và hoàn tất đơn hàng"
+            );
+        }
+
         Review review = Review.builder()
             .rating(request.getRating())
             .comment(request.getComment())
@@ -75,7 +92,7 @@ public class ReviewService {
             .user(user)
             .product(product)
             .build();
-        return reviewMapper.toResponse(reviewRepository.save(review));
+        return toResponse(reviewRepository.save(review));
     }
 
     @Transactional
@@ -88,7 +105,19 @@ public class ReviewService {
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
-        return reviewMapper.toResponse(reviewRepository.save(review));
+        return toResponse(reviewRepository.save(review));
+    }
+
+    private ReviewResponse toResponse(Review review) {
+        ReviewResponse response = reviewMapper.toResponse(review);
+        response.setVerifiedPurchase(review.getUser() != null
+            && review.getProduct() != null
+            && orderRepository.existsByUserAndProductAndStatus(
+                review.getUser().getId(),
+                review.getProduct().getId(),
+                STATUS.COMPLETED
+            ));
+        return response;
     }
 
     @Transactional

@@ -4,25 +4,35 @@
     const userRoleKey = "emarket_user_role";
     const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
     let refreshInFlight = null;
+    let accessToken = null;
+    let cachedUserName = null;
+    let cachedUserRole = null;
+
+    // Access tokens are intentionally kept in memory; clear legacy persisted session data.
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem(userNameKey);
+    localStorage.removeItem(userRoleKey);
 
     function getToken() {
-        return localStorage.getItem(storageKey);
+        return accessToken;
     }
 
     function setToken(token) {
-        if (token) {
-            localStorage.setItem(storageKey, token);
-        }
+        accessToken = token || null;
     }
 
     function clearToken() {
+        accessToken = null;
+        cachedUserName = null;
+        cachedUserRole = null;
+        // Remove tokens written by older versions of the storefront.
         localStorage.removeItem(storageKey);
         localStorage.removeItem(userNameKey);
         localStorage.removeItem(userRoleKey);
     }
 
     function setUserName(userName) {
-        if (userName) localStorage.setItem(userNameKey, userName);
+        cachedUserName = userName || null;
     }
 
     async function responseError(response) {
@@ -66,7 +76,7 @@
                 if (!data.accessToken) throw new Error("Không nhận được access token mới.");
 
                 setToken(data.accessToken);
-                if (data.role) localStorage.setItem(userRoleKey, data.role);
+                if (data.role) cachedUserRole = data.role;
                 return data;
             };
 
@@ -80,6 +90,16 @@
         }
 
         return refreshInFlight;
+    }
+
+    async function restoreSession() {
+        try {
+            await refreshAccessToken(null);
+            return true;
+        } catch (error) {
+            clearToken();
+            return false;
+        }
     }
 
     async function request(path, options = {}, allowRefresh = true) {
@@ -151,18 +171,20 @@
 
     window.emarketApi = {
         getToken,
+        restoreSession,
         getUserName() {
-            const storedUserName = localStorage.getItem(userNameKey);
-            if (storedUserName) return storedUserName;
+            if (cachedUserName) return cachedUserName;
             try {
                 const encodedClaims = getToken()?.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-                return encodedClaims ? JSON.parse(atob(encodedClaims)).sub || null : null;
+                const paddedClaims = encodedClaims ? encodedClaims.padEnd(Math.ceil(encodedClaims.length / 4) * 4, "=") : "";
+                cachedUserName = paddedClaims ? JSON.parse(atob(paddedClaims)).sub || null : null;
+                return cachedUserName;
             } catch (error) {
                 return null;
             }
         },
         getRole() {
-            return localStorage.getItem(userRoleKey);
+            return cachedUserRole;
         },
         setToken,
         clearToken,
@@ -173,7 +195,7 @@
             });
             setToken(data.accessToken);
             setUserName(payload.userName);
-            if (data.role) localStorage.setItem(userRoleKey, data.role);
+            if (data.role) cachedUserRole = data.role;
             return data;
         },
         async register(payload) {
@@ -183,7 +205,7 @@
             });
             setToken(data.accessToken);
             setUserName(payload.userName);
-            if (data.role) localStorage.setItem(userRoleKey, data.role);
+            if (data.role) cachedUserRole = data.role;
             return data;
         },
         async logout() {
@@ -193,25 +215,44 @@
                 clearToken();
             }
         },
-        async getProducts() {
+        async getProductsPage(filters = {}) {
+            const params = new URLSearchParams({
+                page: String(filters.page ?? 0),
+                size: String(filters.size ?? 12),
+                sort: filters.sort || "default"
+            });
+            for (const [key, value] of Object.entries(filters)) {
+                if (key !== "page" && key !== "size" && key !== "sort" && value !== "" && value != null) {
+                    params.set(key, String(value));
+                }
+            }
+            const result = await request(`/api/products?${params.toString()}`);
+            if (Array.isArray(result)) {
+                return {
+                    content: result.map(normalizeProduct),
+                    number: 0,
+                    size: result.length,
+                    totalElements: result.length,
+                    totalPages: result.length ? 1 : 0,
+                    last: true
+                };
+            }
+            return {
+                ...result,
+                content: (result?.content || []).map(normalizeProduct)
+            };
+        },
+        async getAllProducts() {
             const products = [];
             const pageSize = 100;
             let page = 0;
-
             while (true) {
-                const result = await request(`/api/products?page=${page}&size=${pageSize}`);
-                if (Array.isArray(result)) {
-                    products.push(...result);
-                    break;
-                }
-
-                const content = Array.isArray(result?.content) ? result.content : [];
-                products.push(...content);
-                if (result?.last === true || content.length < pageSize) break;
+                const result = await this.getProductsPage({ page, size: pageSize });
+                products.push(...result.content);
+                if (result.last === true || result.content.length < pageSize) break;
                 page += 1;
             }
-
-            return products.map(normalizeProduct);
+            return products;
         },
         async getProduct(productId) {
             return normalizeProduct(await request(`/api/products/${productId}`));

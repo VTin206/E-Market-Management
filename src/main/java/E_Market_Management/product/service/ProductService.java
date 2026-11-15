@@ -1,6 +1,7 @@
 package E_Market_Management.product.service;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -103,20 +104,50 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ProductResponse> getAllProducts(Long categoryId, Long brandId, int page, int size) {
-        Page<Product> products;
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id"));
-        if (categoryId == null && brandId == null) {
-            products = productRepository.findAll(pageable);
-        } else if (categoryId == null && brandId != null) {
-            products = productRepository.findByBrand_Id(brandId, pageable);
-        } else if (categoryId != null && brandId == null) {
-            products = productRepository.findByCategory_Id(categoryId, pageable);
-        } else {
-            products = productRepository.findByCategory_IdAndBrand_Id(categoryId, brandId, pageable);
+    public Page<ProductResponse> getAllProducts(
+        Long categoryId,
+        Long brandId,
+        String query,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
+        String stockFilter,
+        String sort,
+        int page,
+        int size
+    ) {
+        if (page < 0) throw new IllegalArgumentException("Page không được nhỏ hơn 0");
+        if (size < 1 || size > 100) throw new IllegalArgumentException("Size phải nằm trong khoảng từ 1 đến 100");
+        if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("Khoảng giá không hợp lệ");
+        }
+        if (stockFilter != null && !stockFilter.equals("in-stock") && !stockFilter.equals("out-of-stock")) {
+            throw new IllegalArgumentException("Bộ lọc tồn kho không hợp lệ");
         }
 
+        String normalizedQuery = query == null || query.isBlank() ? null : query.trim();
+        Pageable pageable = PageRequest.of(page, size, productSort(sort));
+        Page<Product> products = productRepository.search(
+            categoryId,
+            brandId,
+            normalizedQuery,
+            minPrice,
+            maxPrice,
+            stockFilter,
+            pageable
+        );
+
         return products.map(productMapper::toResponse);
+    }
+
+    private Sort productSort(String sort) {
+        return switch (sort == null ? "default" : sort) {
+            case "price-asc" -> Sort.by("price").ascending().and(Sort.by("id").ascending());
+            case "price-desc" -> Sort.by("price").descending().and(Sort.by("id").ascending());
+            case "name-asc" -> Sort.by("name").ascending().and(Sort.by("id").ascending());
+            case "stock-desc" -> Sort.by("stock").descending().and(Sort.by("id").ascending());
+            case "default" -> Sort.by("id").ascending();
+            default -> throw new IllegalArgumentException("Cách sắp xếp không hợp lệ");
+        };
     }
 
     @Transactional(readOnly = true)

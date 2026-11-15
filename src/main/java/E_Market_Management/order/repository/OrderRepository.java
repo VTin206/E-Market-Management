@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import E_Market_Management.order.entity.Order;
+import E_Market_Management.order.entity.STATUS;
 import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -18,6 +19,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByIdAndUserId(Long orderId, Long userId);
 
     Optional<Order> findByTrackingCode(UUID trackingCode);
+
+    @Query("""
+        select case when count(o) > 0 then true else false end
+        from Order o
+        join o.orderItems item
+        where o.user.id = :userId
+          and item.product.id = :productId
+          and o.status = :status
+    """)
+    boolean existsByUserAndProductAndStatus(
+        @Param("userId") Long userId,
+        @Param("productId") Long productId,
+        @Param("status") STATUS status
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from Order o where o.id = :orderId")

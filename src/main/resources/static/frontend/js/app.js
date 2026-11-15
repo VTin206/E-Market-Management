@@ -2,6 +2,9 @@
     const guestCartKey = "emarket_guest_cart";
     const state = {
         products: [],
+        featuredProducts: [],
+        productsPageInfo: { number: 0, size: 12, totalElements: 0, totalPages: 0, last: true },
+        catalogRequestId: 0,
         categories: [],
         brands: [],
         productsPage: 0,
@@ -213,6 +216,22 @@
 
     function refreshIcons() {
         if (window.lucide) window.lucide.createIcons();
+        document.querySelectorAll("[data-product-image]").forEach((image) => {
+            if (image.dataset.fallbackBound) return;
+            image.dataset.fallbackBound = "true";
+            image.addEventListener("error", () => {
+                const wrapper = image.closest(".product-photo");
+                if (!wrapper) return;
+                const compact = image.dataset.compact === "true";
+                const placeholder = document.createElement("div");
+                placeholder.className = `product-image-placeholder ${compact ? "compact" : ""}`;
+                placeholder.setAttribute("role", "img");
+                placeholder.setAttribute("aria-label", "Chưa có hình ảnh");
+                placeholder.innerHTML = `${icon("image", compact ? 22 : 32)}<span>Chưa có hình ảnh</span>`;
+                wrapper.replaceChildren(placeholder);
+                refreshIcons();
+            }, { once: true });
+        });
     }
 
     function escapeHtml(value) {
@@ -303,10 +322,19 @@
 
     function productVisual(product, compact = false) {
         const label = escapeHtml(product.name || "Sản phẩm công nghệ");
+        let imageUrl = "";
         if (product.imageUrl) {
+            try {
+                const parsedUrl = new URL(product.imageUrl, document.baseURI);
+                if (["http:", "https:"].includes(parsedUrl.protocol)) imageUrl = escapeHtml(parsedUrl.href);
+            } catch (error) {
+                imageUrl = "";
+            }
+        }
+        if (imageUrl) {
             return `
                 <div class="product-photo ${compact ? "compact" : ""}">
-                    <img class="product-image" src="${escapeHtml(product.imageUrl)}" alt="${label}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder ${compact ? "compact" : ""}\\'>${icon("image", compact ? 22 : 32)}<span>Chưa có hình ảnh</span></div>';refreshIcons();">
+                    <img class="product-image" src="${imageUrl}" alt="${label}" loading="lazy" data-product-image data-compact="${compact}">
                 </div>
             `;
         }
@@ -339,9 +367,7 @@
                         ${escapeHtml(product.name)}
                     </button>
                     <div class="product-card-rating">
-                        <span class="stars">${"★".repeat(5)}</span>
-                        <span class="rating-val">5.0</span>
-                        <span class="rating-count">(Đánh giá)</span>
+                        <span class="rating-count">Xem đánh giá thực tế</span>
                     </div>
                     <div class="price-line">
                         <strong class="price">${formatMoney(product.price)}</strong>
@@ -373,13 +399,13 @@
             ${categories.length ? `
                 <div class="category-grid">
                     ${categories.map((category) => {
-                        const count = state.products.filter((product) => product.category?.id === category.id).length;
+                        const count = state.featuredProducts.filter((product) => product.category?.id === category.id).length;
                         return `
                             <article class="category-card" data-category-filter="${escapeHtml(category.name)}">
                                 <div class="category-icon">${icon("smartphone", 26)}</div>
                                 <div class="category-info">
                                     <strong>${escapeHtml(category.name)}</strong>
-                                    <span>${count} sản phẩm</span>
+                                <span>${count ? `${count} sản phẩm nổi bật` : "Khám phá sản phẩm"}</span>
                                 </div>
                                 <i data-lucide="chevron-right" class="category-chevron"></i>
                             </article>
@@ -409,14 +435,14 @@
         if (nodes.catalogList) {
             nodes.catalogList.innerHTML = categories.length
                 ? categories.map((category) => {
-                    const count = state.products.filter((product) => product.category?.id === category.id).length;
+                    const count = state.featuredProducts.filter((product) => product.category?.id === category.id).length;
                     return `
                         <button class="catalog-item" type="button" data-category-filter="${escapeHtml(category.name)}">
                             <div class="catalog-item-left">
                                 <i data-lucide="tag"></i>
                                 <span>${escapeHtml(category.name)}</span>
                             </div>
-                            <span class="catalog-item-count">${count}</span>
+                            <span class="catalog-item-count">${count || "Xem"}</span>
                         </button>
                     `;
                 }).join("")
@@ -449,41 +475,69 @@
     }
 
     function filteredProducts() {
-        return state.products.filter((product) => {
-            // Stock flag filter
-            const matchesFlag = state.filter === "all"
-                || (state.filter === "in-stock" && product.stock > 0)
-                || (state.filter === "out-of-stock" && product.stock <= 0);
+        return state.products;
+    }
 
-            // Search query filter
-            const prodText = `${product.name} ${product.category?.name || ""} ${product.brand?.name || ""}`.toLowerCase();
-            const matchesQuery = !state.query || prodText.includes(state.query.toLowerCase());
+    function selectedIdByName(items, name) {
+        if (!name) return "";
+        return items.find((item) => item.name?.toLowerCase() === name.toLowerCase())?.id || "";
+    }
 
-            // Category select filter
-            const matchesCategory = !state.categoryFilter
-                || (product.category?.name && product.category.name.toLowerCase() === state.categoryFilter.toLowerCase());
+    function priceBounds() {
+        return {
+            "under-5m": { maxPrice: "4999999.99" },
+            "5m-15m": { minPrice: "5000000", maxPrice: "15000000" },
+            "15m-25m": { minPrice: "15000000", maxPrice: "25000000" },
+            "above-25m": { minPrice: "25000000.01" }
+        }[state.priceFilter] || {};
+    }
 
-            // Brand select filter
-            const matchesBrand = !state.brandFilter
-                || (product.brand?.name && product.brand.name.toLowerCase() === state.brandFilter.toLowerCase());
+    function catalogFilters() {
+        return {
+            page: state.productsPage,
+            size: 12,
+            query: state.query,
+            categoryId: selectedIdByName(state.categories, state.categoryFilter),
+            brandId: selectedIdByName(state.brands, state.brandFilter),
+            stockFilter: state.filter === "all" ? "" : state.filter,
+            sort: state.sortFilter,
+            ...priceBounds()
+        };
+    }
 
-            // Price range filter
-            let matchesPrice = true;
-            const price = Number(product.price) || 0;
-            if (state.priceFilter === "under-5m") matchesPrice = price < 5000000;
-            else if (state.priceFilter === "5m-15m") matchesPrice = price >= 5000000 && price <= 15000000;
-            else if (state.priceFilter === "15m-25m") matchesPrice = price >= 15000000 && price <= 25000000;
-            else if (state.priceFilter === "above-25m") matchesPrice = price > 25000000;
-
-            return matchesFlag && matchesQuery && matchesCategory && matchesBrand && matchesPrice;
-        }).sort((a, b) => {
-            // Sorting
-            if (state.sortFilter === "price-asc") return (Number(a.price) || 0) - (Number(b.price) || 0);
-            if (state.sortFilter === "price-desc") return (Number(b.price) || 0) - (Number(a.price) || 0);
-            if (state.sortFilter === "name-asc") return (a.name || "").localeCompare(b.name || "", "vi");
-            if (state.sortFilter === "stock-desc") return (Number(b.stock) || 0) - (Number(a.stock) || 0);
-            return 0;
-        });
+    async function loadCatalogPage(resetPage = false) {
+        if (resetPage) state.productsPage = 0;
+        const requestId = ++state.catalogRequestId;
+        try {
+            const result = await window.emarketApi.getProductsPage(catalogFilters());
+            if (requestId !== state.catalogRequestId) return;
+            state.products = result.content || [];
+            state.productsPageInfo = {
+                number: Number(result.number) || 0,
+                size: Number(result.size) || 12,
+                totalElements: Number(result.totalElements) || 0,
+                totalPages: Number(result.totalPages) || 0,
+                last: result.last !== false
+            };
+            state.productsPage = state.productsPageInfo.number;
+            if (!state.featuredProducts.length && state.productsPage === 0) {
+                state.featuredProducts = [...state.products];
+            }
+            renderProducts();
+            renderDeal();
+            renderCategorySections();
+            return true;
+        } catch (error) {
+            if (requestId !== state.catalogRequestId) return;
+            state.products = [];
+            state.productsPageInfo = { number: 0, size: 12, totalElements: 0, totalPages: 0, last: true };
+            if (nodes.dataStatus) {
+                nodes.dataStatus.innerHTML = `<div class="error-notice"><i data-lucide="alert-circle"></i><span>Không thể tải sản phẩm: ${escapeHtml(error.message)}</span><button class="admin-inline-button" type="button" data-retry-products><i data-lucide="refresh-cw"></i> Thử lại</button></div>`;
+            }
+            renderProducts();
+            refreshIcons();
+            return false;
+        }
     }
 
     function renderActiveFilterChips() {
@@ -554,13 +608,12 @@
         if (!grid) return;
 
         const filtered = filteredProducts();
-        const pageSize = 12;
-        const pageCount = Math.ceil(filtered.length / pageSize);
-        state.productsPage = Math.min(state.productsPage, Math.max(pageCount - 1, 0));
-        const pageProducts = filtered.slice(state.productsPage * pageSize, (state.productsPage + 1) * pageSize);
+        const pageInfo = state.productsPageInfo;
+        const pageCount = pageInfo.totalPages;
+        const pageProducts = filtered;
 
         if (nodes.productTotalCount) {
-            nodes.productTotalCount.textContent = `${filtered.length} sản phẩm`;
+            nodes.productTotalCount.textContent = `${pageInfo.totalElements} sản phẩm`;
         }
 
         renderActiveFilterChips();
@@ -581,10 +634,10 @@
         }
 
         if (pageCount > 1) {
-            const firstProduct = state.productsPage * pageSize + 1;
-            const lastProduct = Math.min((state.productsPage + 1) * pageSize, filtered.length);
+            const firstProduct = state.productsPage * pageInfo.size + 1;
+            const lastProduct = Math.min(firstProduct + pageProducts.length - 1, pageInfo.totalElements);
             pagination.innerHTML = `
-                <span class="pagination-summary" aria-live="polite">Hiển thị <strong>${firstProduct}–${lastProduct}</strong> trong <strong>${filtered.length}</strong> sản phẩm</span>
+                <span class="pagination-summary" aria-live="polite">Hiển thị <strong>${firstProduct}–${lastProduct}</strong> trong <strong>${pageInfo.totalElements}</strong> sản phẩm</span>
                 <div class="product-page-controls">
                     <button class="product-page-button" type="button" data-products-page="${state.productsPage - 1}" ${state.productsPage === 0 ? "disabled" : ""} aria-label="Trang trước">
                         ${icon("chevron-left", 16)}<span>Trước</span>
@@ -606,7 +659,7 @@
 
     function renderDeal() {
         if (!nodes.deals) return;
-        const dealProducts = state.products.filter((product) => product.stock > 0).slice(0, 4);
+        const dealProducts = state.featuredProducts.filter((product) => product.stock > 0).slice(0, 4);
         nodes.deals.classList.toggle("no-products", !dealProducts.length);
         if (!dealProducts.length) {
             nodes.deals.innerHTML = "";
@@ -640,9 +693,9 @@
 
     function renderCategorySections() {
         if (!nodes.categorySections) return;
-        const groups = [...new Set(state.products.map((product) => product.category?.name).filter(Boolean))];
+        const groups = [...new Set(state.featuredProducts.map((product) => product.category?.name).filter(Boolean))];
         nodes.categorySections.innerHTML = groups.map((name) => {
-            const products = state.products.filter((product) => product.category?.name === name).slice(0, 5);
+            const products = state.featuredProducts.filter((product) => product.category?.name === name).slice(0, 5);
             if (!products.length) return "";
             const safeName = escapeHtml(name);
             return `
@@ -754,8 +807,8 @@
 
                     <div class="detail-rating-row">
                         <div class="stars">${"★".repeat(5)}</div>
-                        <span class="score">5.0</span>
-                        <span class="count">(12 đánh giá)</span>
+                        <span class="score" data-product-rating-score>—</span>
+                        <span class="count" data-product-rating-count>(Chưa có đánh giá)</span>
                         <span class="sep">·</span>
                         <span class="stock-badge ${isInStock ? "in-stock" : "out-of-stock"}">
                             <i data-lucide="${isInStock ? "check-circle" : "x-circle"}"></i>
@@ -858,14 +911,18 @@
 
                 <div class="reviews-summary-card">
                     <div class="rating-overall">
-                        <strong class="overall-number">5.0</strong>
-                        <div class="stars">${"★".repeat(5)}</div>
-                        <span>Dựa trên đánh giá của khách hàng</span>
+                        <strong class="overall-number" data-review-average>—</strong>
+                        <div class="stars" data-review-stars>☆☆☆☆☆</div>
+                        <span data-review-summary-label>Chưa có đánh giá</span>
                     </div>
-                    <div class="rating-bars">
-                        <div class="bar-line"><span>5 sao</span><div class="bar-track"><div class="bar-fill" style="width: 90%;"></div></div><span>90%</span></div>
-                        <div class="bar-line"><span>4 sao</span><div class="bar-track"><div class="bar-fill" style="width: 10%;"></div></div><span>10%</span></div>
-                        <div class="bar-line"><span>3 sao</span><div class="bar-track"><div class="bar-fill" style="width: 0%;"></div></div><span>0%</span></div>
+                    <div class="rating-bars" data-review-bars>
+                        ${[5, 4, 3, 2, 1].map((rating) => `
+                            <div class="bar-line">
+                                <span>${rating} sao</span>
+                                <div class="bar-track"><div class="bar-fill" data-rating-fill="${rating}" style="width: 0%;"></div></div>
+                                <span data-rating-percent="${rating}">0%</span>
+                            </div>
+                        `).join("")}
                     </div>
                 </div>
 
@@ -989,7 +1046,7 @@
                             <div class="reviewer-avatar">${escapeHtml(authorInitial)}</div>
                             <div>
                                 <strong>${escapeHtml(review.username || "Khách hàng")}</strong>
-                                <span class="verified-tag"><i data-lucide="badge-check"></i> Đã mua tại E-Market</span>
+                            ${review.verifiedPurchase ? `<span class="verified-tag"><i data-lucide="badge-check"></i> Đã mua tại E-Market</span>` : ""}
                             </div>
                         </div>
                         <div class="review-rating-block">
@@ -1012,6 +1069,45 @@
         refreshIcons();
     }
 
+    function renderReviewSummary() {
+        const reviews = state.reviewItems || [];
+        const averageNode = document.querySelector("[data-review-average]");
+        const starsNode = document.querySelector("[data-review-stars]");
+        const labelNode = document.querySelector("[data-review-summary-label]");
+        const detailScoreNode = document.querySelector("[data-product-rating-score]");
+        const detailCountNode = document.querySelector("[data-product-rating-count]");
+        const counts = [1, 2, 3, 4, 5].reduce((result, rating) => {
+            result[rating] = reviews.filter((review) => Number(review.rating) === rating).length;
+            return result;
+        }, {});
+
+        if (!reviews.length) {
+            if (averageNode) averageNode.textContent = "—";
+            if (starsNode) starsNode.textContent = "☆☆☆☆☆";
+            if (labelNode) labelNode.textContent = "Chưa có đánh giá";
+            if (detailScoreNode) detailScoreNode.textContent = "—";
+            if (detailCountNode) detailCountNode.textContent = "(Chưa có đánh giá)";
+        } else {
+            const average = reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / reviews.length;
+            const roundedAverage = average.toFixed(1);
+            const filledStars = Math.round(average);
+            const stars = "★".repeat(filledStars) + "☆".repeat(5 - filledStars);
+            if (averageNode) averageNode.textContent = roundedAverage;
+            if (starsNode) starsNode.textContent = stars;
+            if (labelNode) labelNode.textContent = `Dựa trên ${reviews.length} đánh giá của khách hàng`;
+            if (detailScoreNode) detailScoreNode.textContent = roundedAverage;
+            if (detailCountNode) detailCountNode.textContent = `(${reviews.length} đánh giá)`;
+        }
+
+        [5, 4, 3, 2, 1].forEach((rating) => {
+            const percent = reviews.length ? Math.round((counts[rating] / reviews.length) * 100) : 0;
+            const fill = document.querySelector(`[data-rating-fill="${rating}"]`);
+            const percentNode = document.querySelector(`[data-rating-percent="${rating}"]`);
+            if (fill) fill.style.width = `${percent}%`;
+            if (percentNode) percentNode.textContent = `${percent}%`;
+        });
+    }
+
     async function loadProductReviews(productId) {
         const list = $("#reviewList");
         if (!list) return;
@@ -1020,6 +1116,7 @@
             const reviews = await window.emarketApi.getReviews(productId);
             if (state.selectedProduct?.id !== Number(productId)) return;
             state.reviewItems = reviews || [];
+            renderReviewSummary();
             renderReviewList();
         } catch (error) {
             if (state.selectedProduct?.id !== Number(productId)) return;
@@ -1059,15 +1156,24 @@
         localStorage.setItem(guestCartKey, JSON.stringify(items));
     }
 
-    function restoreGuestCart() {
+    async function restoreGuestCart() {
         try {
             const saved = JSON.parse(localStorage.getItem(guestCartKey) || "[]");
-            state.cart = saved.flatMap((savedItem) => {
-                const product = state.products.find((item) => item.id === Number(savedItem.productId));
+            const loadedProducts = [...state.featuredProducts, ...state.products];
+            state.cart = (await Promise.all(saved.map(async (savedItem) => {
+                let product = loadedProducts.find((item) => item.id === Number(savedItem.productId));
                 const quantity = Number(savedItem.quantity);
-                if (!product || !Number.isInteger(quantity) || quantity < 1) return [];
-                return [{ id: `local-${product.id}`, product, quantity, local: true }];
-            });
+                if (!Number.isInteger(quantity) || quantity < 1) return null;
+                if (!product) {
+                    try {
+                        product = await window.emarketApi.getProduct(Number(savedItem.productId));
+                    } catch (error) {
+                        return null;
+                    }
+                }
+                if (!product || product.stock < 1) return null;
+                return { id: `local-${product.id}`, product, quantity: Math.min(quantity, product.stock), local: true };
+            }))).filter(Boolean);
         } catch (error) {
             state.cart = [];
             localStorage.removeItem(guestCartKey);
@@ -1127,7 +1233,8 @@
     }
 
     function addLocalCart(productId, quantity = 1) {
-        const product = state.products.find((item) => item.id === Number(productId));
+        const product = [...state.featuredProducts, ...state.products]
+            .find((item) => item.id === Number(productId));
         if (!product || product.stock <= 0) return false;
         const existing = state.cart.find((item) => item.product.id === product.id);
         if ((existing?.quantity || 0) + quantity > product.stock) {
@@ -1427,8 +1534,11 @@
 
         try {
             await window.emarketApi.changePassword({ currentPassword, newPassword });
+            window.emarketApi.clearToken();
+            state.profile = null;
+            updateAccountState();
             nodes.changePasswordForm.reset();
-            feedback.textContent = "Đổi mật khẩu thành công.";
+            feedback.textContent = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại.";
             feedback.classList.add("is-success");
             showToast("Đổi mật khẩu thành công.", "success");
         } catch (error) {
@@ -1934,7 +2044,7 @@
         try {
             const [orders, products, categories, brands, memberships, users] = await Promise.all([
                 window.emarketApi.getAllOrders(orderPage, 10),
-                window.emarketApi.getProducts(),
+                window.emarketApi.getAllProducts(),
                 window.emarketApi.getCategories(),
                 window.emarketApi.getBrands(),
                 window.emarketApi.getMemberships(),
@@ -2060,7 +2170,8 @@
                 try {
                     state.cart = (await window.emarketApi.addToCart(Number(item.productId), Number(item.quantity))).items;
                 } catch (error) {
-                    const product = state.products.find((candidate) => candidate.id === Number(item.productId));
+                    const product = [...state.featuredProducts, ...state.products]
+                        .find((candidate) => candidate.id === Number(item.productId));
                     if (product) pending.push({ id: `local-${product.id}`, product, quantity: Number(item.quantity), local: true });
                 }
             }
@@ -2183,6 +2294,8 @@
         const payload = Object.fromEntries(new FormData(form).entries());
         try {
             await window.emarketApi.resetPassword(payload);
+            window.emarketApi.clearToken();
+            updateAccountState();
             form.reset();
             setAuthMode("login");
             showToast("Mật khẩu đã được đổi. Hãy đăng nhập bằng mật khẩu mới.", "success");
@@ -2211,7 +2324,7 @@
             nodes.searchClearButton.classList.toggle("hidden", !state.query);
         }
         setView("catalog");
-        renderProducts();
+        void loadCatalogPage(true);
         const target = $("#products");
         if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -2236,7 +2349,7 @@
             tab.classList.toggle("active", tab.dataset.filter === "all");
         });
 
-        renderProducts();
+        void loadCatalogPage(true);
     }
 
     function bindEvents() {
@@ -2299,25 +2412,26 @@
                     if (nodes.filterPrice) nodes.filterPrice.value = "all";
                 }
                 state.productsPage = 0;
-                renderProducts();
+                void loadCatalogPage(true);
             }
 
             if (filter) {
                 state.filter = filter.dataset.filter;
                 state.productsPage = 0;
                 document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === filter));
-                renderProducts();
+                void loadCatalogPage(true);
             }
 
             if (pageButton && !pageButton.disabled) {
                 state.productsPage = Number(pageButton.dataset.productsPage);
-                renderProducts();
+                void loadCatalogPage();
                 const target = $("#products");
                 if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
 
             if (detail) {
-                const product = state.products.find((item) => item.id === Number(detail.dataset.detail));
+                const product = [...state.featuredProducts, ...state.products]
+                    .find((item) => item.id === Number(detail.dataset.detail));
                 if (product) renderDetail(product);
             }
 
@@ -2354,7 +2468,7 @@
                 });
                 if (nodes.catalogPanel) nodes.catalogPanel.classList.remove("open");
                 setView("catalog");
-                renderProducts();
+                void loadCatalogPage(true);
                 const target = $("#products");
                 if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
@@ -2392,7 +2506,7 @@
             nodes.filterCategory.addEventListener("change", (event) => {
                 state.categoryFilter = event.target.value;
                 state.productsPage = 0;
-                renderProducts();
+                void loadCatalogPage(true);
             });
         }
 
@@ -2400,7 +2514,7 @@
             nodes.filterBrand.addEventListener("change", (event) => {
                 state.brandFilter = event.target.value;
                 state.productsPage = 0;
-                renderProducts();
+                void loadCatalogPage(true);
             });
         }
 
@@ -2408,7 +2522,7 @@
             nodes.filterPrice.addEventListener("change", (event) => {
                 state.priceFilter = event.target.value;
                 state.productsPage = 0;
-                renderProducts();
+                void loadCatalogPage(true);
             });
         }
 
@@ -2416,7 +2530,7 @@
             nodes.filterSort.addEventListener("change", (event) => {
                 state.sortFilter = event.target.value;
                 state.productsPage = 0;
-                renderProducts();
+                void loadCatalogPage(true);
             });
         }
 
@@ -2753,24 +2867,8 @@
         if (status) status.innerHTML = `<div class="loading-inline"><div class="admin-spinner"></div> <span>Đang nạp dữ liệu sản phẩm từ hệ thống...</span></div>`;
         refreshIcons();
 
-        try {
-            state.products = await window.emarketApi.getProducts();
-            if (status) status.textContent = state.products.length ? "" : "Chưa có sản phẩm trong hệ thống.";
-        } catch (error) {
-            state.products = [];
-            if (status) {
-                status.innerHTML = `
-                    <div class="error-notice">
-                        <i data-lucide="alert-circle"></i>
-                        <span>Không thể tải sản phẩm: ${escapeHtml(error.message)}</span>
-                        <button class="admin-inline-button" type="button" data-retry-products>
-                            <i data-lucide="refresh-cw"></i> Thử lại
-                        </button>
-                    </div>
-                `;
-            }
-        }
-
+        state.featuredProducts = [];
+        state.productsPage = 0;
         try {
             const [categories, brands] = await Promise.all([
                 window.emarketApi.getCategories(),
@@ -2779,14 +2877,31 @@
             state.categories = categories || [];
             state.brands = brands || [];
         } catch (error) {
-            state.categories = [...new Map(state.products
+            state.categories = [...new Map([...state.featuredProducts, ...state.products]
                 .filter((p) => p.category?.id != null)
                 .map((p) => [p.category.id, p.category])).values()];
-            state.brands = [...new Map(state.products
+            state.brands = [...new Map([...state.featuredProducts, ...state.products]
                 .filter((p) => p.brand?.id != null)
                 .map((p) => [p.brand.id, p.brand])).values()];
         }
 
+        const catalogLoaded = await loadCatalogPage(true);
+        const loadedProducts = [...state.featuredProducts, ...state.products];
+        if (!state.categories.length) {
+            state.categories = [...new Map(loadedProducts
+                .filter((p) => p.category?.id != null)
+                .map((p) => [p.category.id, p.category])).values()];
+        }
+        if (!state.brands.length) {
+            state.brands = [...new Map(loadedProducts
+                .filter((p) => p.brand?.id != null)
+                .map((p) => [p.brand.id, p.brand])).values()];
+        }
+        if (status && catalogLoaded) {
+            status.textContent = state.productsPageInfo.totalElements > 0
+                ? ""
+                : "Chưa có sản phẩm trong hệ thống.";
+        }
         renderCategories();
         renderCategoryMenus();
         renderBrandFilters();
@@ -2802,9 +2917,10 @@
         if (resetToken) openResetPassword(resetToken);
         initHeroCarousel();
         renderCart();
+        await window.emarketApi.restoreSession();
         updateAccountState();
         await loadProducts();
-        restoreGuestCart();
+        await restoreGuestCart();
         if (window.emarketApi.getToken()) await loadAccountCart();
         refreshIcons();
     }

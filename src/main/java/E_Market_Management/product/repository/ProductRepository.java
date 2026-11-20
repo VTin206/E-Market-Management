@@ -25,7 +25,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         where (:categoryId is null or p.category.id = :categoryId)
           and (:brandId is null or p.brand.id = :brandId)
           and (
-              :query is null
+              :query = ''
               or lower(p.name) like lower(concat('%', :query, '%'))
               or lower(coalesce(p.description, '')) like lower(concat('%', :query, '%'))
               or lower(p.category.name) like lower(concat('%', :query, '%'))

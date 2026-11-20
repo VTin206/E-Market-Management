@@ -43,12 +43,7 @@ public class CategoryService {
     }
 
     public List<CategoryResponse> getAllCategory() {
-        
         List<Category> categories = categoryRepository.findAll();
-        
-        if(categories.isEmpty()) {
-            throw new ResourceNotFoundException("Hiện tại vẫn chưa có danh mục nào!");
-        }
 
         List<CategoryResponse> responses = categories.stream()
             .map(category -> categoryMapper.toResponse(category))

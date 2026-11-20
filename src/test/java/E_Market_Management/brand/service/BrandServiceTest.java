@@ -65,10 +65,10 @@ class BrandServiceTest {
     }
 
     @Test
-    void getAllBrand_whenNoBrandsExist_throwsResolutionException() {
+    void getAllBrand_whenNoBrandsExist_returnsEmptyList() {
         when(brandRepository.findAll()).thenReturn(List.of());
 
-        assertThrows(ResolutionException.class, () -> brandService.getAllBrand());
+        assertEquals(List.of(), brandService.getAllBrand());
     }
 
     @Test

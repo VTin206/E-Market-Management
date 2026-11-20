@@ -2,7 +2,10 @@
     const storageKey = "emarket_access_token";
     const userNameKey = "emarket_user_name";
     const userRoleKey = "emarket_user_role";
-    const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" ? "http://localhost:8080" : "")).replace(/\/+$/, "");
+    const isLocalHost = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(window.location.hostname);
+    const isStaticDevServer = ["5173", "5500"].includes(window.location.port);
+    const isLocalStaticOrigin = isStaticDevServer || (isLocalHost && window.location.port !== "8080");
+    const apiBase = (window.EMARKET_API_BASE || (window.location.protocol === "file:" || isLocalStaticOrigin ? "http://localhost:8080" : "")).replace(/\/+$/, "");
     let refreshInFlight = null;
     let accessToken = null;
     let cachedUserName = null;

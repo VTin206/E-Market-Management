@@ -1,6 +1,5 @@
 package E_Market_Management.brand.service;
 
-import java.lang.module.ResolutionException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -39,7 +38,6 @@ public class BrandService {
 
     public List<BrandResponse> getAllBrand() {
         List<Brand> brands = brandRepository.findAll();
-        if(brands.isEmpty()) throw new ResolutionException("Không tìm thấy thương hiệu nào!");
 
         List<BrandResponse> responses = brands.stream()
             .map(brand -> brandMapper.toResponse(brand))

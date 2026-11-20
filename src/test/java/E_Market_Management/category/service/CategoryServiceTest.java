@@ -68,10 +68,10 @@ class CategoryServiceTest {
     }
 
     @Test
-    void getAllCategory_whenNoCategoriesExist_throwsNotFound() {
+    void getAllCategory_whenNoCategoriesExist_returnsEmptyList() {
         when(categoryRepository.findAll()).thenReturn(List.of());
 
-        assertThrows(ResourceNotFoundException.class, () -> categoryService.getAllCategory());
+        assertEquals(List.of(), categoryService.getAllCategory());
     }
 
     @Test

@@ -124,7 +124,7 @@ public class ProductService {
             throw new IllegalArgumentException("Bộ lọc tồn kho không hợp lệ");
         }
 
-        String normalizedQuery = query == null || query.isBlank() ? null : query.trim();
+        String normalizedQuery = query == null || query.isBlank() ? "" : query.trim();
         Pageable pageable = PageRequest.of(page, size, productSort(sort));
         Page<Product> products = productRepository.search(
             categoryId,

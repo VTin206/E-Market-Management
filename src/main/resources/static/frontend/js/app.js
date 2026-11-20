@@ -2264,11 +2264,16 @@
                 await window.emarketApi.register(payload);
                 showToast("Đăng ký tài khoản thành công!", "success");
             }
+            const signedInAsAdmin = type === "login" && window.emarketApi.getRole() === "ADMIN";
             updateAccountState();
             closeAuth();
-            await loadAccountCart();
-            renderReviewForm();
-            renderReviewList();
+            if (signedInAsAdmin) {
+                openAdmin();
+            } else {
+                await loadAccountCart();
+                renderReviewForm();
+                renderReviewList();
+            }
         } catch (error) {
             showToast(`${type === "login" ? "Đăng nhập" : "Đăng ký"} thất bại: ${error.message}`, "error");
         }
@@ -2919,6 +2924,11 @@
         renderCart();
         await window.emarketApi.restoreSession();
         updateAccountState();
+        if (window.emarketApi.getToken() && window.emarketApi.getRole() === "ADMIN") {
+            openAdmin();
+            refreshIcons();
+            return;
+        }
         await loadProducts();
         await restoreGuestCart();
         if (window.emarketApi.getToken()) await loadAccountCart();

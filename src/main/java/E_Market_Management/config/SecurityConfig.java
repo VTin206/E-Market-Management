@@ -72,6 +72,10 @@ public class SecurityConfig {
                 .requestMatchers("/frontend/**").permitAll()
                 .requestMatchers(
                     HttpMethod.GET,
+                    "/uploads/**"
+                ).permitAll()
+                .requestMatchers(
+                    HttpMethod.GET,
                     "/api/products/**"
                 ).permitAll()
                 .requestMatchers(
@@ -154,6 +158,10 @@ public class SecurityConfig {
                 .requestMatchers(
                     HttpMethod.POST,
                     "/api/products/**"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/uploads/images"
                 ).hasRole("ADMIN")
                 .requestMatchers(
                     HttpMethod.PUT,

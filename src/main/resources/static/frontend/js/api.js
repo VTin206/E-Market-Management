@@ -111,7 +111,7 @@
         };
         const token = getToken();
 
-        if (options.body) {
+        if (options.body && !(options.body instanceof FormData)) {
             headers["Content-Type"] = "application/json";
         }
 
@@ -363,6 +363,14 @@
         },
         async deleteProduct(productId) {
             return request("/api/products/" + productId, { method: "DELETE" });
+        },
+        async uploadImage(file) {
+            const body = new FormData();
+            body.append("file", file);
+            return request("/api/uploads/images", {
+                method: "POST",
+                body
+            });
         },
         async getCategories() {
             return request("/api/category");

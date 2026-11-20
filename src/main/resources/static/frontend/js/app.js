@@ -26,6 +26,11 @@
         changePasswordSaving: false,
         adminTab: "orders",
         adminEditing: null,
+        adminProductDraft: null,
+        adminProductCategoryId: null,
+        adminInlineCategoryOpen: false,
+        adminProductBrandId: null,
+        adminInlineBrandOpen: false,
         admin: {
             products: [],
             orders: [],
@@ -1899,26 +1904,41 @@
             + pagination;
     }
 
+    function saveAdminProductDraft() {
+        const form = nodes.adminContent.querySelector("#adminProductForm");
+        if (form) state.adminProductDraft = Object.fromEntries(new FormData(form).entries());
+    }
+
     function renderAdminProductForm() {
         const editing = state.adminEditing?.type === "product"
             ? state.admin.products.find((item) => item.id === state.adminEditing.id) : null;
+        const draft = state.adminProductDraft || {};
+        const productName = draft.name ?? editing?.name ?? "";
+        const productPrice = draft.price ?? editing?.price ?? "";
+        const productStock = draft.stock ?? editing?.stock ?? 0;
+        const productImageUrl = draft.imageUrl ?? editing?.imageUrl ?? "";
+        const productDescription = draft.description ?? editing?.description ?? "";
+        const selectedCategoryId = state.adminProductCategoryId ?? (draft.categoryId ? Number(draft.categoryId) : null) ?? editing?.category?.id ?? "";
+        const selectedBrandId = state.adminProductBrandId ?? (draft.brandId ? Number(draft.brandId) : null) ?? editing?.brand?.id ?? "";
         const categoryOptions = '<option value="">Chọn danh mục</option>' + state.admin.categories.map((category) =>
-            '<option value="' + category.id + '"' + (editing?.category?.id === category.id ? " selected" : "") + '>' + escapeHtml(category.name) + '</option>'
+            '<option value="' + category.id + '"' + (selectedCategoryId === category.id ? " selected" : "") + '>' + escapeHtml(category.name) + '</option>'
         ).join("");
         const brandOptions = '<option value="">Chọn thương hiệu</option>' + state.admin.brands.map((brand) =>
-            '<option value="' + brand.id + '"' + (editing?.brand?.id === brand.id ? " selected" : "") + '>' + escapeHtml(brand.name) + '</option>'
+            '<option value="' + brand.id + '"' + (selectedBrandId === brand.id ? " selected" : "") + '>' + escapeHtml(brand.name) + '</option>'
         ).join("");
         const locked = !state.admin.categories.length || !state.admin.brands.length;
         return '<form class="admin-form" id="adminProductForm"><div class="admin-form-title"><strong>'
             + (editing ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
             + (locked ? '<p class="admin-form-hint">Cần tạo ít nhất một danh mục và một thương hiệu trước khi thêm sản phẩm.</p>' : "")
-            + '<div class="admin-form-grid"><label>Tên sản phẩm *<input name="name" required maxlength="255" value="' + escapeHtml(editing?.name || "") + '"></label>'
-            + '<label>Giá bán (₫) *<input name="price" type="number" min="0.01" step="0.01" required value="' + escapeHtml(editing?.price ?? "") + '"></label>'
-            + '<label>Số lượng tồn kho *<input name="stock" type="number" min="0" step="1" required value="' + escapeHtml(editing?.stock ?? 0) + '"></label>'
-            + '<label>Danh mục *<select name="categoryId" required>' + categoryOptions + '</select></label>'
-            + '<label>Thương hiệu *<select name="brandId" required>' + brandOptions + '</select></label>'
-            + '<label>Đường dẫn hình ảnh<input name="imageUrl" type="text" placeholder="https://... hoặc assets/..." value="' + escapeHtml(editing?.imageUrl || "") + '"></label>'
-            + '<label class="admin-form-wide">Mô tả sản phẩm<textarea name="description" rows="3">' + escapeHtml(editing?.description || "") + '</textarea></label></div>'
+            + '<div class="admin-form-grid"><label>Tên sản phẩm *<input name="name" required maxlength="255" value="' + escapeHtml(productName) + '"></label>'
+            + '<label>Giá bán (₫) *<input name="price" type="number" min="0.01" step="0.01" required value="' + escapeHtml(productPrice) + '"></label>'
+            + '<label>Số lượng tồn kho *<input name="stock" type="number" min="0" step="1" required value="' + escapeHtml(productStock) + '"></label>'
+            + '<label>Danh mục *<div class="admin-select-with-action"><select name="categoryId" required>' + categoryOptions + '</select><button class="admin-inline-button" type="button" data-admin-inline-category-add>' + icon("plus", 15) + 'Thêm nhanh</button></div>'
+            + (state.adminInlineCategoryOpen ? '<div class="admin-inline-create" data-admin-inline-category-form><input data-admin-inline-category-name type="text" maxlength="100" placeholder="Tên danh mục mới"><button class="admin-inline-button" type="button" data-admin-inline-category-save>Thêm</button><button class="admin-text-button" type="button" data-admin-inline-category-cancel>Hủy</button></div>' : '') + '</label>'
+            + '<label>Thương hiệu *<div class="admin-select-with-action"><select name="brandId" required>' + brandOptions + '</select><button class="admin-inline-button" type="button" data-admin-inline-brand-add>' + icon("plus", 15) + 'Thêm nhanh</button></div>'
+            + (state.adminInlineBrandOpen ? '<div class="admin-inline-create admin-inline-brand-create" data-admin-inline-brand-form><input data-admin-inline-brand-name type="text" maxlength="100" placeholder="Tên thương hiệu"><input data-admin-inline-brand-country type="text" maxlength="100" placeholder="Quốc gia"><input data-admin-inline-brand-logo type="url" maxlength="255" placeholder="Logo (URL ảnh)"><input data-admin-inline-brand-logo-file type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="admin-inline-button" type="button" data-admin-inline-brand-save>Thêm</button><button class="admin-text-button" type="button" data-admin-inline-brand-cancel>Hủy</button></div>' : '') + '</label>'
+            + '<label>Ảnh sản phẩm<input name="imageUrl" type="text" placeholder="URL ảnh (không bắt buộc)" value="' + escapeHtml(productImageUrl) + '"><input name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small class="admin-form-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB.</small></label>'
+            + '<label class="admin-form-wide">Mô tả sản phẩm<textarea name="description" rows="3">' + escapeHtml(productDescription) + '</textarea></label></div>'
             + '<div class="admin-form-actions"><button class="primary-button" type="submit" ' + (locked ? "disabled" : "") + '>'
             + (editing ? "Lưu thay đổi" : "Tạo sản phẩm") + '</button><button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
     }
@@ -1969,7 +1989,7 @@
             + (editing ? "Cập nhật thương hiệu" : "Thêm thương hiệu mới") + '</strong><button class="admin-text-button" type="button" data-admin-cancel>Đóng</button></div>'
             + '<div class="admin-form-grid"><label>Tên thương hiệu *<input name="name" required maxlength="100" value="' + escapeHtml(editing?.name || "") + '"></label>'
             + '<label>Quốc gia *<input name="country" required maxlength="100" value="' + escapeHtml(editing?.country || "") + '"></label>'
-            + '<label class="admin-form-wide">Logo (URL ảnh) *<input name="logo" required maxlength="255" value="' + escapeHtml(editing?.logo || "") + '"></label></div>'
+            + '<label class="admin-form-wide">Logo thương hiệu<input name="logo" maxlength="255" placeholder="URL logo (không bắt buộc nếu chọn tệp)" value="' + escapeHtml(editing?.logo || "") + '"><input name="logoFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><small class="admin-form-help">Chọn ảnh JPG, PNG, WEBP hoặc GIF, tối đa 5 MB.</small></label></div>'
             + '<div class="admin-form-actions"><button class="primary-button" type="submit">' + (editing ? "Lưu thay đổi" : "Tạo thương hiệu") + '</button>'
             + '<button class="admin-text-button" type="button" data-admin-cancel>Hủy</button></div></form>';
     }
@@ -2100,12 +2120,15 @@
         const values = Object.fromEntries(new FormData(form).entries());
         try {
             if (form.id === "adminProductForm") {
+                const uploadedImage = values.imageFile?.size
+                    ? await window.emarketApi.uploadImage(values.imageFile)
+                    : null;
                 const payload = {
                     name: values.name.trim(),
                     description: values.description.trim(),
                     price: Number(values.price),
                     stock: Number(values.stock),
-                    imageUrl: values.imageUrl.trim(),
+                    imageUrl: uploadedImage?.url || values.imageUrl.trim(),
                     categoryId: Number(values.categoryId),
                     brandId: Number(values.brandId)
                 };
@@ -2126,7 +2149,10 @@
                     showToast("Đã tạo danh mục mới thành công.", "success");
                 }
             } else if (form.id === "adminBrandForm") {
-                const payload = { name: values.name.trim(), country: values.country.trim(), logo: values.logo.trim() };
+                const uploadedLogo = values.logoFile?.size
+                    ? await window.emarketApi.uploadImage(values.logoFile)
+                    : null;
+                const payload = { name: values.name.trim(), country: values.country.trim(), logo: uploadedLogo?.url || values.logo.trim() };
                 if (state.adminEditing?.type === "brand" && state.adminEditing.id != null) {
                     await window.emarketApi.updateBrand(state.adminEditing.id, payload);
                     showToast("Đã cập nhật thương hiệu thành công.", "success");
@@ -2136,6 +2162,9 @@
                 }
             }
             state.adminEditing = null;
+            state.adminProductDraft = null;
+            state.adminProductCategoryId = null;
+            state.adminProductBrandId = null;
             await loadAdminData();
             if (form.id === "adminProductForm" || form.id === "adminCategoryForm" || form.id === "adminBrandForm") await loadProducts();
         } catch (error) {
@@ -2749,6 +2778,89 @@
                     await loadAdminData();
                     return;
                 }
+                if (event.target.closest("[data-admin-inline-category-add]")) {
+                    saveAdminProductDraft();
+                    const categorySelect = nodes.adminContent.querySelector('#adminProductForm [name="categoryId"]');
+                    state.adminProductCategoryId = categorySelect?.value ? Number(categorySelect.value) : null;
+                    state.adminInlineCategoryOpen = true;
+                    renderAdminDashboard();
+                    nodes.adminContent.querySelector("[data-admin-inline-category-name]")?.focus();
+                    return;
+                }
+                if (event.target.closest("[data-admin-inline-category-cancel]")) {
+                    state.adminInlineCategoryOpen = false;
+                    renderAdminDashboard();
+                    return;
+                }
+                if (event.target.closest("[data-admin-inline-category-save]")) {
+                    const saveButton = event.target.closest("[data-admin-inline-category-save]");
+                    const input = nodes.adminContent.querySelector("[data-admin-inline-category-name]");
+                    const name = input?.value.trim() || "";
+                    if (!name) {
+                        showToast("Nhập tên danh mục trước khi thêm.", "error");
+                        input?.focus();
+                        return;
+                    }
+                    saveButton.disabled = true;
+                    try {
+                        const category = await window.emarketApi.createCategory({ name, description: "" });
+                        state.admin.categories = [...state.admin.categories, category];
+                        state.adminProductCategoryId = category.id;
+                        state.adminInlineCategoryOpen = false;
+                        showToast("Đã thêm danh mục và chọn vào sản phẩm.", "success");
+                        renderAdminDashboard();
+                    } catch (error) {
+                        showToast("Không thể thêm danh mục: " + error.message, "error");
+                        saveButton.disabled = false;
+                    }
+                    return;
+                }
+                if (event.target.closest("[data-admin-inline-brand-add]")) {
+                    saveAdminProductDraft();
+                    const brandSelect = nodes.adminContent.querySelector('#adminProductForm [name="brandId"]');
+                    state.adminProductBrandId = brandSelect?.value ? Number(brandSelect.value) : null;
+                    state.adminInlineBrandOpen = true;
+                    renderAdminDashboard();
+                    nodes.adminContent.querySelector("[data-admin-inline-brand-name]")?.focus();
+                    return;
+                }
+                if (event.target.closest("[data-admin-inline-brand-cancel]")) {
+                    state.adminInlineBrandOpen = false;
+                    renderAdminDashboard();
+                    return;
+                }
+                if (event.target.closest("[data-admin-inline-brand-save]")) {
+                    const saveButton = event.target.closest("[data-admin-inline-brand-save]");
+                    const nameInput = nodes.adminContent.querySelector("[data-admin-inline-brand-name]");
+                    const countryInput = nodes.adminContent.querySelector("[data-admin-inline-brand-country]");
+                    const logoInput = nodes.adminContent.querySelector("[data-admin-inline-brand-logo]");
+                    const logoFileInput = nodes.adminContent.querySelector("[data-admin-inline-brand-logo-file]");
+                    const name = nameInput?.value.trim() || "";
+                    const country = countryInput?.value.trim() || "";
+                    const logo = logoInput?.value.trim() || "";
+                    const logoFile = logoFileInput?.files?.[0];
+                    if (!name || !country || (!logo && !logoFile)) {
+                        showToast("Nhập đủ tên, quốc gia và chọn logo hoặc tệp ảnh.", "error");
+                        (nameInput?.value ? countryInput : logoInput)?.focus();
+                        return;
+                    }
+                    saveButton.disabled = true;
+                    try {
+                        const uploadedLogo = logoFile?.size
+                            ? await window.emarketApi.uploadImage(logoFile)
+                            : null;
+                        const brand = await window.emarketApi.createBrand({ name, country, logo: uploadedLogo?.url || logo });
+                        state.admin.brands = [...state.admin.brands, brand];
+                        state.adminProductBrandId = brand.id;
+                        state.adminInlineBrandOpen = false;
+                        showToast("Đã thêm thương hiệu và chọn vào sản phẩm.", "success");
+                        renderAdminDashboard();
+                    } catch (error) {
+                        showToast("Không thể thêm thương hiệu: " + error.message, "error");
+                        saveButton.disabled = false;
+                    }
+                    return;
+                }
                 const userPageButton = event.target.closest("[data-user-page]");
                 if (userPageButton && !userPageButton.disabled) {
                     await loadAdminUsers(Number(userPageButton.dataset.userPage));
@@ -2784,12 +2896,22 @@
                 }
                 if (event.target.closest("[data-admin-cancel]")) {
                     state.adminEditing = null;
+                    state.adminProductDraft = null;
+                    state.adminProductCategoryId = null;
+                    state.adminInlineCategoryOpen = false;
+                    state.adminProductBrandId = null;
+                    state.adminInlineBrandOpen = false;
                     renderAdminDashboard();
                     return;
                 }
                 const addButton = event.target.closest("[data-admin-add]");
                 if (addButton) {
                     state.adminEditing = { type: addButton.dataset.adminAdd, id: null };
+                    state.adminProductDraft = null;
+                    state.adminProductCategoryId = null;
+                    state.adminInlineCategoryOpen = false;
+                    state.adminProductBrandId = null;
+                    state.adminInlineBrandOpen = false;
                     renderAdminDashboard();
                     return;
                 }
@@ -2799,6 +2921,11 @@
                         type: editButton.dataset.adminEditType,
                         id: Number(editButton.dataset.adminEditId)
                     };
+                    state.adminProductDraft = null;
+                    state.adminProductCategoryId = null;
+                    state.adminInlineCategoryOpen = false;
+                    state.adminProductBrandId = null;
+                    state.adminInlineBrandOpen = false;
                     renderAdminDashboard();
                     return;
                 }

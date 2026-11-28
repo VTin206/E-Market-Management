@@ -60,6 +60,10 @@ button, input, select, textarea {
     font: inherit;
     min-width: 0;
 }
+:focus-visible {
+    outline: 3px solid rgba(147, 197, 253, 0.95);
+    outline-offset: 3px;
+}
 button {
     cursor: pointer;
     background: transparent;
@@ -976,7 +980,9 @@ i[data-lucide] {
     font-size: 14px;
     font-weight: 700;
     color: var(--text);
+    overflow-wrap: anywhere;
 }
+.category-info { min-width: 0; }
 .category-info span {
     font-size: 12px;
     color: var(--muted);
@@ -1270,6 +1276,29 @@ i[data-lucide] {
     color: var(--danger-dark);
     padding: 10px 14px;
     border-radius: var(--radius-md);
+}
+.home-data-error {
+    margin: 0 24px 24px;
+    align-items: flex-start;
+    padding: 14px 16px;
+}
+.home-data-error > i {
+    flex: 0 0 auto;
+    margin-top: 2px;
+}
+.home-data-error > div {
+    min-width: 0;
+    flex: 1;
+}
+.home-data-error strong {
+    display: block;
+    margin-bottom: 2px;
+}
+.home-data-error p {
+    color: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
 }
 
 /* ==========================================================================
@@ -3832,13 +3861,28 @@ i[data-lucide] {
     .hero-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
     .hero-stat-sep { display: none; }
     .trust-bar { grid-template-columns: 1fr; }
-    .category-grid { grid-template-columns: 1fr; }
-    .product-grid, .small-grid, .deal-grid { grid-template-columns: 1fr; }
+    .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .product-grid, .small-grid, .deal-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+    }
+    .product-card { padding: 10px; border-radius: var(--radius-md); }
+    .product-media { height: 138px; padding: 4px; }
+    .product-name { font-size: 13px; min-height: 35px; }
+    .product-card-rating { font-size: 11px; gap: 2px; }
+    .price { font-size: 15px; }
+    .installment-tag { font-size: 10px; }
+    .card-actions { gap: 6px; margin-top: 10px; padding-top: 8px; }
+    .add-button { height: 36px; padding: 0 6px; font-size: 12px; }
+    .quick-view-button { width: 36px; height: 36px; }
     .footer-top { grid-template-columns: 1fr; }
     .buy-actions { grid-template-columns: 1fr; }
     .admin-summary { grid-template-columns: 1fr; }
     .admin-select-with-action { align-items: stretch; flex-direction: column; }
     .admin-inline-brand-create { grid-template-columns: 1fr; }
+    .home-data-error { margin: 0 12px 12px; flex-wrap: wrap; }
+    .home-data-error .admin-inline-button { margin-left: 28px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

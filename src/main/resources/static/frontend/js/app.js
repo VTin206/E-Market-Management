@@ -15,6 +15,7 @@
         priceFilter: "all",
         sortFilter: "default",
         query: "",
+        catalogError: "",
         selectedProduct: null,
         reviewItems: [],
         editingReviewId: null,
@@ -395,13 +396,20 @@
     function renderCategories() {
         if (!nodes.categories) return;
         const categories = state.categories || [];
-        nodes.categories.innerHTML = `
-            <div class="section-title">
-                <span></span>
-                <h2>Danh Mục Nổi Bật</h2>
-                <a href="#products" class="view-all-link" data-open-catalog>Xem tất cả sản phẩm <i data-lucide="arrow-right"></i></a>
-            </div>
-            ${categories.length ? `
+        const categoryContent = state.catalogError
+            ? `
+                <div class="error-notice home-data-error" role="alert">
+                    <i data-lucide="wifi-off"></i>
+                    <div>
+                        <strong>Không thể kết nối tới máy chủ</strong>
+                        <p>${escapeHtml(state.catalogError)}</p>
+                    </div>
+                    <button class="admin-inline-button" type="button" data-retry-products>
+                        <i data-lucide="refresh-cw"></i> Thử lại
+                    </button>
+                </div>
+            `
+            : categories.length ? `
                 <div class="category-grid">
                     ${categories.map((category) => {
                         const count = state.featuredProducts.filter((product) => product.category?.id === category.id).length;
@@ -417,7 +425,14 @@
                         `;
                     }).join("")}
                 </div>
-            ` : `<p class="empty-state">Chưa có danh mục nào được khởi tạo.</p>`}
+            ` : `<p class="empty-state">Chưa có danh mục nào được khởi tạo.</p>`;
+        nodes.categories.innerHTML = `
+            <div class="section-title">
+                <span></span>
+                <h2>Danh Mục Nổi Bật</h2>
+                <a href="#products" class="view-all-link" data-open-catalog>Xem tất cả sản phẩm <i data-lucide="arrow-right"></i></a>
+            </div>
+            ${categoryContent}
         `;
         refreshIcons();
     }
@@ -516,6 +531,7 @@
         try {
             const result = await window.emarketApi.getProductsPage(catalogFilters());
             if (requestId !== state.catalogRequestId) return;
+            state.catalogError = "";
             state.products = result.content || [];
             state.productsPageInfo = {
                 number: Number(result.number) || 0,
@@ -535,6 +551,7 @@
         } catch (error) {
             if (requestId !== state.catalogRequestId) return;
             state.products = [];
+            state.catalogError = error.message || "Vui lòng kiểm tra backend đang chạy và thử lại.";
             state.productsPageInfo = { number: 0, size: 12, totalElements: 0, totalPages: 0, last: true };
             if (nodes.dataStatus) {
                 nodes.dataStatus.innerHTML = `<div class="error-notice"><i data-lucide="alert-circle"></i><span>Không thể tải sản phẩm: ${escapeHtml(error.message)}</span><button class="admin-inline-button" type="button" data-retry-products><i data-lucide="refresh-cw"></i> Thử lại</button></div>`;
@@ -3000,6 +3017,7 @@
         refreshIcons();
 
         state.featuredProducts = [];
+        state.catalogError = "";
         state.productsPage = 0;
         try {
             const [categories, brands] = await Promise.all([
